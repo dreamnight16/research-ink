@@ -70,7 +70,10 @@ class PluginEngine:
             return False
 
         # Security gate: user plugins run in-process and can access the filesystem,
-        # network, and sensitive config files like .api_token
+        # network, and sensitive config files like .api_token.
+        # WARNING: There is NO sandboxing — plugins execute arbitrary Python in the same
+        # process with full user permissions. For production, consider subprocess isolation
+        # (e.g., multiprocessing + restricted file descriptors) or container-based sandboxing.
         if self._is_user_plugin(plugin_path):
             if not self._config.get("allow_untrusted_plugins", False):
                 logger.warning(
@@ -82,8 +85,9 @@ class PluginEngine:
                 )
                 return False
             logger.warning(
-                "Loading untrusted plugin '%s' from %s. The plugin has full access to the "
-                "filesystem and network. Ensure you trust the source.",
+                "CRITICAL: Loading untrusted plugin '%s' from %s. The plugin has full access "
+                "to the filesystem, network, and credentials. NO sandboxing is applied. "
+                "Ensure you have audited the plugin source code.",
                 plugin_name, plugin_path,
             )
 

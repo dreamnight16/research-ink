@@ -5,7 +5,7 @@ from typing import Any
 
 
 class ArxivFetcher:
-    BASE = "http://export.arxiv.org/api/query"
+    BASE = "https://export.arxiv.org/api/query"
 
     def build_query_url(self, query: str, max_results: int = 10) -> str:
         encoded = quote_plus(query)

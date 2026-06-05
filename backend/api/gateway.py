@@ -5,7 +5,8 @@ import json
 import logging
 import os
 import secrets
-
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
@@ -21,6 +22,14 @@ from backend.core.llm_router import LLMRouter
 from backend.core.scheduler import TaskScheduler
 
 logger = logging.getLogger(__name__)
+
+# In-memory rate limiter: {client_ip: [timestamps]}
+_rate_limits: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_WINDOW = 60   # seconds
+_RATE_LIMIT_MAX = 60       # requests per window
+
+# Short-lived WebSocket tickets to avoid exposing auth token in URL
+_ws_tickets: dict[str, float] = {}
 
 
 class ChatRequest(BaseModel):
@@ -41,11 +50,11 @@ class SearchRequest(BaseModel):
 
 
 class SettingsUpdate(BaseModel):
-    ollama_base_url: str = ""
-    ollama_model: str = ""
-    cloud_provider: str = ""
-    cloud_api_key: str = ""
-    cloud_model: str = ""
+    ollama_base_url: str = Field(default="", max_length=256)
+    ollama_model: str = Field(default="", max_length=128)
+    cloud_provider: str = Field(default="", max_length=64)
+    cloud_api_key: str = Field(default="", max_length=256)
+    cloud_model: str = Field(default="", max_length=128)
 
 
 def _hash_messages(messages: list[dict]) -> str:
@@ -146,18 +155,27 @@ def create_app(config: Config) -> FastAPI:
     app.state.auth_token = auth_token
     logger.info("API auth token initialized (first 8 chars): %s...", auth_token[:8])
 
+    AUTH_SKIP_PATHS = {"/health", "/docs", "/openapi.json", "/api/auth/token", "/api/ws/ticket"}
+
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
         # 跳过健康检查等公开端点
-        if request.url.path in ("/health", "/docs", "/openapi.json"):
+        if request.url.path in AUTH_SKIP_PATHS:
             return await call_next(request)
-        # WebSocket 通过查询参数传 token
-        if request.url.path == "/api/ws":
-            token = request.query_params.get("token", "")
-        else:
-            token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
         if token != app.state.auth_token:
             raise HTTPException(status_code=401, detail="Unauthorized")
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def rate_limit_middleware(request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        window = _rate_limits[client_ip]
+        window[:] = [t for t in window if now - t < _RATE_LIMIT_WINDOW]
+        if len(window) >= _RATE_LIMIT_MAX:
+            raise HTTPException(status_code=429, detail="Too Many Requests")
+        window.append(now)
         return await call_next(request)
 
     app.add_middleware(
@@ -179,6 +197,21 @@ def create_app(config: Config) -> FastAPI:
     @app.get("/api/health")
     async def health():
         return {"status": "ok"}
+
+    @app.get("/api/auth/token")
+    async def get_token(request: Request):
+        """返回本地 API token，仅允许 localhost 请求。"""
+        host = request.client.host if request.client else ""
+        if host not in ("127.0.0.1", "::1", "localhost"):
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return {"token": app.state.auth_token}
+
+    @app.get("/api/ws/ticket")
+    async def get_ws_ticket(request: Request):
+        """生成一次性 WebSocket ticket（30 秒有效），避免在 URL 中暴露 token。"""
+        ticket = secrets.token_urlsafe(32)
+        _ws_tickets[ticket] = time.time() + 30
+        return {"ticket": ticket}
 
     @app.get("/api/plugins")
     async def list_plugins():
@@ -233,6 +266,7 @@ def create_app(config: Config) -> FastAPI:
                 setattr(cfg, key, val)
         cfg.save()
         _rebuild_llm_router(cfg, request.app)
+        logger.info("Settings updated (cloud_api_key %s)", "changed" if req.cloud_api_key else "unchanged")
         return {"status": "ok"}
 
     @app.post("/api/knowledge/search")
@@ -251,11 +285,16 @@ def create_app(config: Config) -> FastAPI:
     # WebSocket for real-time push
     @app.websocket("/api/ws")
     async def websocket_endpoint(ws: WebSocket):
-        # WebSocket 通过查询参数传 token（URL 安全）
-        token = ws.query_params.get("token", "")
-        if token != app.state.auth_token:
+        # 使用一次性 ticket 替代长期 token，避免凭据在 URL 中暴露
+        ticket = ws.query_params.get("ticket", "")
+        now = time.time()
+        for t in list(_ws_tickets.keys()):
+            if _ws_tickets[t] < now:
+                del _ws_tickets[t]
+        if ticket not in _ws_tickets:
             await ws.close(code=4001, reason="Unauthorized")
             return
+        del _ws_tickets[ticket]  # 一次性使用
         await ws.accept()
         # Forward event bus events to WebSocket
         async def forward(data: dict):

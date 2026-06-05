@@ -49,10 +49,17 @@ class SecurityManager:
     def audit_log(self) -> list[dict[str, Any]]:
         return list(self._audit)
 
-    def audit_log_persist(self, path: str) -> None:
-        """将审计日志追加写入磁盘文件。"""
+    def audit_log_persist(self, path: str, allowed_base_dir: str | None = None) -> None:
+        """将审计日志追加写入磁盘文件（路径限定在 allowed_base_dir 内）。"""
         import json
+        import os
+        if allowed_base_dir is not None:
+            real_path = os.path.realpath(path)
+            real_base = os.path.realpath(allowed_base_dir)
+            if not (real_path.startswith(real_base + os.sep) or real_path == real_base):
+                raise ValueError("Audit log path must be within the allowed base directory")
         entries = list(self._audit)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "a") as f:
             for entry in entries:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")

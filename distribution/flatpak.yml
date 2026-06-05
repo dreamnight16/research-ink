@@ -10,7 +10,7 @@ finish-args:
   - --share=network
   - --socket=x11
   - --socket=wayland
-  - --filesystem=home
+  - --filesystem=~/.yanmo
   - --talk-name=org.freedesktop.Notifications
 
 modules:
