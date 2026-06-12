@@ -2,4 +2,3 @@
 name = "term_advisor"
 display_name = "读懂导师"
 version = "0.1.0"
-dependencies = ["knowledge-base"]

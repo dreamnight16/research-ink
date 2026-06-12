@@ -1,7 +1,8 @@
+from typing import Any
 from urllib.parse import quote_plus
+
 import aiohttp
 import feedparser
-from typing import Any
 
 
 class ArxivFetcher:

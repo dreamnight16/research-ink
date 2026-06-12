@@ -36,14 +36,17 @@ class PluginEngine:
             try:
                 raw = tomllib.loads(manifest_path.read_text())
             except Exception:
+                logger.warning("Failed to parse plugin manifest: %s", manifest_path, exc_info=True)
                 continue
             p = raw.get("plugin", {})
+            deps = p.get("dependencies", [])
             manifests.append({
                 "name": p.get("name", candidate.name),
                 "display_name": p.get("display_name", candidate.name),
                 "version": p.get("version", "0.0.0"),
                 "description": p.get("description", ""),
                 "author": p.get("author", ""),
+                "dependencies": deps if isinstance(deps, list) else [],
                 "path": str(candidate),
                 "source": "builtin" if str(base) in str(Path(__file__).parent.parent / "plugins") else "user",
             })
@@ -68,6 +71,24 @@ class PluginEngine:
         if not os.path.exists(plugin_file):
             logger.warning("No plugin.py found at %s", plugin_path)
             return False
+
+        # Validate plugin dependencies
+        manifest_path = os.path.join(plugin_path, "plugin.toml")
+        if os.path.exists(manifest_path):
+            try:
+                raw = tomllib.loads(Path(manifest_path).read_text())
+                deps = raw.get("plugin", {}).get("dependencies", [])
+                if isinstance(deps, list):
+                    loaded = set(self._plugins.keys())
+                    missing = [d for d in deps if d not in loaded]
+                    if missing:
+                        logger.warning(
+                            "Plugin '%s' depends on %s which are not loaded — skipping",
+                            plugin_name, missing,
+                        )
+                        return False
+            except Exception:
+                pass
 
         # Security gate: user plugins run in-process and can access the filesystem,
         # network, and sensitive config files like .api_token.

@@ -1,0 +1,102 @@
+/* ===== 移动端响应式样式 ===== */
+
+/* 小屏 (< 768px)：垂直布局，侧边栏变底部栏 */
+@media (max-width: 768px) {
+  .workbench {
+    flex-direction: column !important;
+  }
+
+  .workbench > main {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .side-panel {
+    width: 100% !important;
+    height: 40vh;
+    border-left: none !important;
+    border-top: 1px solid var(--border-light);
+  }
+
+  .tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-bar button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* 输入框和按钮适配触控 */
+  input, textarea, select, button {
+    font-size: 16px !important; /* 防 iOS 缩放 */
+    min-height: 44px; /* 符合 iOS 触控最小尺寸 */
+  }
+}
+
+/* 极小屏 (< 375px) */
+@media (max-width: 375px) {
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.1rem; }
+
+  .paper-card, .result-card {
+    padding: 10px;
+  }
+}
+
+/* 连接状态横幅 */
+.connect-banner {
+  padding: 8px 12px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.connect-banner.connected {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.connect-banner.disconnected {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.connect-banner.searching {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+/* 配对页面 */
+.pair-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  gap: 16px;
+  text-align: center;
+}
+
+.pair-screen input {
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 8px;
+  width: 160px;
+}
+
+/* 离线遮罩 */
+.offline-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #fff;
+  z-index: 100;
+}

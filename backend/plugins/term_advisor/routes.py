@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Request
-from pydantic import BaseModel
-from backend.plugins.term_advisor.advisor import parse_advisor_text, create_plan
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
+from backend.plugins.term_advisor.advisor import create_plan, parse_advisor_text
 
 
 class ParseRequest(BaseModel):
-    text: str
+    text: str = Field(max_length=10000)
 
 
 class PlanRequest(BaseModel):
-    text: str
-    title: str = ""
+    text: str = Field(max_length=10000)
+    title: str = Field(default="", max_length=500)
 
 
 def create_router(plugin) -> APIRouter:

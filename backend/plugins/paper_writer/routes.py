@@ -1,16 +1,17 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from backend.plugins.paper_writer.outline import generate_outline
+
 from backend.plugins.paper_writer.citation import parse_bibtex
 from backend.plugins.paper_writer.deai import deai_text, detect_ai_score
+from backend.plugins.paper_writer.outline import generate_outline
 
 
 class OutlineRequest(BaseModel):
-    topic: str
+    topic: str = Field(max_length=500)
 
 
 class BibtexRequest(BaseModel):
-    bibtex: str
+    bibtex: str = Field(max_length=50000)
 
 
 class DeAIRequest(BaseModel):

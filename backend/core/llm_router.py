@@ -1,6 +1,5 @@
-from enum import Enum
 from dataclasses import dataclass
-from typing import Any
+from enum import Enum
 
 import httpx
 
@@ -31,11 +30,9 @@ class LLMRouter:
         # 验证 Ollama URL 不指向外部（防 SSRF）
         url_lower = self.ollama_base_url.lower()
         if not any(url_lower.startswith(p) for p in self._ALLOWED_OLLAMA_PATTERNS):
-            import logging
-            logging.getLogger(__name__).warning(
-                "ollama_base_url 指向非本地地址 (%s)，存在 SSRF 风险。"
-                "已限制为本地访问。",
-                self.ollama_base_url,
+            raise ValueError(
+                f"ollama_base_url ({self.ollama_base_url}) is not a local address. "
+                f"External URLs are blocked to prevent SSRF attacks."
             )
         self._has_cloud = bool(self.cloud_provider and self.cloud_api_key)
         self._http_client: httpx.AsyncClient | None = None
@@ -75,16 +72,34 @@ class LLMRouter:
         self,
         provider: Provider,
         messages: list[dict[str, str]],
+        retries: int = 1,
     ) -> str:
-        if provider == Provider.OLLAMA:
-            return await self._ollama_chat(messages)
-        if provider == Provider.CLAUDE:
-            return await self._claude_chat(messages)
-        if provider == Provider.OPENAI:
-            return await self._openai_chat(messages)
-        if provider == Provider.DEEPSEEK:
-            return await self._deepseek_chat(messages)
-        raise ValueError(f"Unknown provider: {provider}")
+        import asyncio
+        import logging
+        logger = logging.getLogger(__name__)
+        last_error: Exception | None = None
+        for attempt in range(retries + 1):
+            try:
+                if provider == Provider.OLLAMA:
+                    return await self._ollama_chat(messages)
+                if provider == Provider.CLAUDE:
+                    return await self._claude_chat(messages)
+                if provider == Provider.OPENAI:
+                    return await self._openai_chat(messages)
+                if provider == Provider.DEEPSEEK:
+                    return await self._deepseek_chat(messages)
+                raise ValueError(f"Unknown provider: {provider}")
+            except Exception as e:
+                last_error = e
+                if attempt < retries:
+                    logger.warning(
+                        "LLM call failed (attempt %d/%d): %s",
+                        attempt + 1, retries + 1, e,
+                    )
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    logger.error("LLM call failed after %d attempts: %s", retries + 1, e)
+        raise last_error  # type: ignore[misc]
 
     async def _ollama_chat(self, messages: list[dict[str, str]]) -> str:
         client = self._get_client()

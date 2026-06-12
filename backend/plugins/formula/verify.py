@@ -59,12 +59,15 @@ def latex_to_sympy(latex_str: str) -> str:
     """
     # Attempt 1: Use sympy.parsing.latex.parse_latex (sympy >= 1.6)
     try:
-        from sympy.parsing.latex import parse_latex
         from sympy import sstr
+        from sympy.parsing.latex import parse_latex
         expr = parse_latex(latex_str)
         return sstr(expr)
     except Exception:
-        pass
+        import logging
+        logging.getLogger(__name__).debug(
+            "sympy.parsing.latex failed for input, falling back to regex"
+        )
 
     # Attempt 2: Regex-based fallback
     s = latex_str.strip()
@@ -84,6 +87,13 @@ def latex_to_sympy(latex_str: str) -> str:
     s = re.sub(r'\\sum', 'Sum', s)
     s = re.sub(r'\\int', 'Integral', s)
     s = re.sub(r'\\partial', 'partial', s)
+    s = re.sub(r'\\sin', 'sin', s)
+    s = re.sub(r'\\cos', 'cos', s)
+    s = re.sub(r'\\tan', 'tan', s)
+    s = re.sub(r'\\log', 'log', s)
+    s = re.sub(r'\\ln', 'ln', s)
+    s = re.sub(r'\\exp', 'exp', s)
+    s = re.sub(r'\\lim', 'Limit', s)
     s = re.sub(r'\\mathrm\{([^}]*)\}', r'\1', s)
     s = re.sub(r'\\text\{([^}]*)\}', r'\1', s)
     # Handle superscripts ^ and subscripts _
@@ -101,10 +111,21 @@ def sympy_verify(latex_str: str) -> FormulaVerification:
     suggestions: list[str] = []
 
     try:
-        import sympy
+        from sympy.parsing.sympy_parser import (
+            convert_xor,
+            implicit_multiplication_application,
+            parse_expr,
+            standard_transformations,
+        )
         python_expr = latex_to_sympy(latex_str)
-        # 安全: parse_expr() 只解析表达式，不执行 eval()（与 sympify() 不同）
-        sympy_parsed = sympy.parse_expr(python_expr)
+        transformations = standard_transformations + (
+            implicit_multiplication_application, convert_xor
+        )
+        sympy_parsed = parse_expr(
+            python_expr,
+            transformations=transformations,
+            evaluate=False,
+        )
         suggestions.append(f"SymPy 解析成功: {sympy_parsed}")
     except Exception as e:
         errors.append(f"SymPy 解析失败: {str(e)[:100]}")

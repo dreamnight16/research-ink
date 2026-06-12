@@ -2,10 +2,10 @@
 
 # 研墨 / Yanmo
 
-[![Tests](https://img.shields.io/badge/tests-49%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
 
 **一个跑在你电脑上、数据不出门的科研助手。**
 
@@ -15,10 +15,20 @@
 
 ---
 
-## 安装与运行
+## 快速开始
 
 需要 Python 3.11+、Node.js 18+ 和 Ollama。
 
+**一键安装：**
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+
+# Windows (PowerShell)
+Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.ps1 | Invoke-Expression
+```
+
+**手动安装：**
 ```bash
 pip install -e ".[dev]"
 python -m backend.main
@@ -34,12 +44,39 @@ npm run dev
 
 浏览器打开 `http://localhost:5173`。
 
+**Docker：**
+```bash
+docker compose up
+```
+
 ### 桌面应用
 
-> **注意 (2026-05):** 主要维护的前端是 React Web 应用 (`frontend/`)。
-> Tauri 桌面壳 (`frontend/src-tauri/`) 和 Qt 前端 (`frontend_qt/`) 已
-> **废弃**，将在未来版本中移除。维护三套前端对小型团队不可持续。
-> 如果您依赖 Tauri 或 Qt 前端，请开 issue 讨论迁移到 Web 前端。
+从 [Releases](https://github.com/sixtdreanight/Yanmo/releases) 下载安装包：
+
+| 平台 | 格式 | 大小 |
+|------|------|------|
+| Windows 10/11 | `.msi` | ~50MB |
+| macOS 12+ | `.dmg` | ~50MB |
+| Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
+
+桌面应用使用 Tauri 壳打包 React 前端，自动启动 Python 后端。需 Python 3.11+ 和 Ollama。
+
+### 移动端（配套应用）
+
+移动端通过局域网连接桌面后端：
+
+| 平台 | 格式 |
+|------|------|
+| Android 8+ | `.apk` |
+| iOS 16+ | 开发者签名 `.ipa` |
+
+1. 桌面端打开 **设置 → 移动端配对**，生成配对码
+2. 移动端输入桌面 IP 和配对码完成连接
+3. 手机即成为桌面功能的遥控器
+
+### Qt 桌面（已废弃）
+
+> Qt 前端 (`frontend_qt/`) 已废弃，请使用 Tauri 桌面应用或 React Web 前端。
 
 ---
 

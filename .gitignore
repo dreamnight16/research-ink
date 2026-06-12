@@ -13,6 +13,7 @@ venv/
 
 # Secrets (API keys, credentials)
 config.json
+*.api_token
 
 # IDE
 .vscode/
@@ -30,5 +31,4 @@ frontend/src-tauri/Cargo.lock
 # OS
 .DS_Store
 Thumbs.db
-docs/
 dist/

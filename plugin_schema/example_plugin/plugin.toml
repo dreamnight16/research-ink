@@ -1,0 +1,6 @@
+[plugin]
+name = "hello-world"
+display_name = "Hello World"
+version = "0.1.0"
+description = "A minimal example plugin demonstrating the plugin API."
+author = "Yanmo Contributors"

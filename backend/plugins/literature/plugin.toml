@@ -2,4 +2,3 @@
 name = "literature"
 display_name = "追新论文"
 version = "0.1.0"
-dependencies = ["knowledge-base"]

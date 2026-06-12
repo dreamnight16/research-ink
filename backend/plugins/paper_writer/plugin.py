@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
+from backend.core.base_plugin import BasePlugin
 
-class PaperWriterPlugin:
+
+class PaperWriterPlugin(BasePlugin):
     name = "paper_writer"
     display_name = "写论文"
     version = "0.1.0"
@@ -17,7 +19,5 @@ class PaperWriterPlugin:
         from backend.plugins.paper_writer.routes import create_router
         return create_router(self)
 
-    def get_commands(self) -> list:
-        return ["/outline", "/cite"]
 
 Plugin = PaperWriterPlugin

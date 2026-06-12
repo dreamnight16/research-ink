@@ -1,50 +1,51 @@
 # backend/api/gateway.py
 import hashlib
-import importlib
 import json
 import logging
 import os
 import secrets
-import time
-from collections import defaultdict
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from backend.api.middleware import (
+    MaxBodySizeMiddleware,
+    RequestLoggingMiddleware,
+    add_ws_ticket,
+    auth_skip_paths,
+    check_ws_connection_limit,
+    consume_ws_ticket,
+    rate_limit_middleware,
+    release_ws_connection,
+)
+from backend.core.config import Config
 from backend.core.engine import PluginEngine
 from backend.core.event_bus import EventBus
-from backend.core.config import Config
-from backend.core.storage import Storage
-from backend.core.security import SecurityManager, Classification
 from backend.core.llm_router import LLMRouter
 from backend.core.scheduler import TaskScheduler
+from backend.core.schema import ensure_schema
+from backend.core.security import Classification, SecurityManager
+from backend.core.storage import Storage
 
 logger = logging.getLogger(__name__)
-
-# In-memory rate limiter: {client_ip: [timestamps]}
-_rate_limits: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT_WINDOW = 60   # seconds
-_RATE_LIMIT_MAX = 60       # requests per window
-
-# Short-lived WebSocket tickets to avoid exposing auth token in URL
-_ws_tickets: dict[str, float] = {}
 
 
 class ChatRequest(BaseModel):
     messages: list[dict] = Field(..., max_length=100)
-    classification: str = Field(max_length=20)
+    classification: str = Field(max_length=20, pattern=r"^(secret|cautious|public)$")
     doc_id: str = Field(max_length=200)
 
 
 class ClassifyRequest(BaseModel):
     doc_id: str = Field(max_length=200)
-    level: str = Field(max_length=20)
+    level: str = Field(max_length=20, pattern=r"^(secret|cautious|public)$")
 
 
 class SearchRequest(BaseModel):
-    collection: str = Field(max_length=100)
+    collection: str = Field(max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")
     query: str = Field(max_length=1000)
     n: int = Field(default=5, ge=1, le=100)
 
@@ -68,7 +69,7 @@ def _load_or_generate_token(config: Config) -> str:
     token_path = os.path.join(config.data_dir, ".api_token")
     try:
         if os.path.exists(token_path):
-            with open(token_path, "r") as f:
+            with open(token_path) as f:
                 return f.read().strip()
     except (OSError, PermissionError):
         pass
@@ -98,7 +99,7 @@ def _rebuild_llm_router(config: Config, app: FastAPI) -> None:
 def create_app(config: Config) -> FastAPI:
     bus = EventBus()
     storage = Storage(config.data_dir)
-    security = SecurityManager()
+    security = SecurityManager(storage=storage)
     scheduler = TaskScheduler(tick_interval=30.0)
     llm_router = LLMRouter(
         ollama_base_url=config.ollama_base_url,
@@ -111,6 +112,7 @@ def create_app(config: Config) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        ensure_schema(storage)
         await scheduler.start()
         # Load plugins on startup
         manifests = engine.discover_all()
@@ -125,17 +127,23 @@ def create_app(config: Config) -> FastAPI:
         # Register auto-crawl for literature plugin
         if "literature" in engine.list_plugins():
             async def auto_crawl():
+                import json
+
                 from backend.plugins.literature.crawlers import CrawlerManager
                 from backend.plugins.literature.crawlers.arxiv import ArxivCrawler
-                from backend.plugins.literature.crawlers.semantic_scholar import SemanticScholarCrawler
                 from backend.plugins.literature.crawlers.dblp import DBLPCrawler
-                import json
+                from backend.plugins.literature.crawlers.semantic_scholar import (
+                    SemanticScholarCrawler,
+                )
                 manager = CrawlerManager()
                 manager.register(ArxivCrawler())
                 manager.register(SemanticScholarCrawler())
                 manager.register(DBLPCrawler())
-                rows = storage.sql_query("SELECT value FROM kv WHERE key = 'literature_interests'")
-                keywords = json.loads(rows[0]["value"]) if rows else ["machine learning"]
+                try:
+                    rows = storage.sql_query("SELECT value FROM kv WHERE key = 'literature_interests'")
+                    keywords = json.loads(rows[0]["value"]) if rows else ["machine learning"]
+                except (json.JSONDecodeError, IndexError):
+                    keywords = ["machine learning"]
                 count = 0
                 for kw in keywords[:3]:
                     result = await manager.search_all(kw, max_results=5)
@@ -147,40 +155,56 @@ def create_app(config: Config) -> FastAPI:
         yield
         await scheduler.stop()
         await engine.shutdown()
+        await llm_router.close()
+        storage.close()
 
-    app = FastAPI(title="研墨", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="研墨", version="1.0.0", lifespan=lifespan)
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "type": type(exc).__name__},
+        )
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
 
     # 生成本地 API 认证 token（首次启动后固定）
     auth_token = _load_or_generate_token(config)
     app.state.auth_token = auth_token
-    logger.info("API auth token initialized (first 8 chars): %s...", auth_token[:8])
+    logger.info("API auth token initialized")
 
-    AUTH_SKIP_PATHS = {"/health", "/docs", "/openapi.json", "/api/auth/token", "/api/ws/ticket"}
+    AUTH_SKIP_PATHS = auth_skip_paths()
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
-        # 跳过健康检查等公开端点
         if request.url.path in AUTH_SKIP_PATHS:
             return await call_next(request)
-        token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-        if token != app.state.auth_token:
+        token = request.headers.get("Authorization", "").lower().removeprefix("bearer ").strip()
+        if not secrets.compare_digest(token, app.state.auth_token):
             raise HTTPException(status_code=401, detail="Unauthorized")
         return await call_next(request)
 
     @app.middleware("http")
-    async def rate_limit_middleware(request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
-        now = time.time()
-        window = _rate_limits[client_ip]
-        window[:] = [t for t in window if now - t < _RATE_LIMIT_WINDOW]
-        if len(window) >= _RATE_LIMIT_MAX:
-            raise HTTPException(status_code=429, detail="Too Many Requests")
-        window.append(now)
-        return await call_next(request)
+    async def rate_limit(request: Request, call_next):
+        return await rate_limit_middleware(request, call_next)
+
+    app.add_middleware(MaxBodySizeMiddleware, max_size=5 * 1024 * 1024)
+    app.add_middleware(RequestLoggingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:5174", "tauri://localhost", "https://tauri.localhost"],
+        allow_origins=[
+            "http://localhost:5173", "http://localhost:5174",
+            "tauri://localhost", "https://tauri.localhost",
+            "capacitor://localhost",
+        ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
@@ -195,8 +219,30 @@ def create_app(config: Config) -> FastAPI:
     app.state.config = config
 
     @app.get("/api/health")
-    async def health():
-        return {"status": "ok"}
+    async def health(request: Request):
+        checks: dict[str, str] = {}
+        # Ollama connectivity
+        try:
+            import httpx
+            async with httpx.AsyncClient() as c:
+                r = await c.get(f"{config.ollama_base_url}/api/tags", timeout=3)
+                checks["ollama"] = "ok" if r.status_code == 200 else "error"
+        except Exception:
+            checks["ollama"] = "unreachable"
+        # SQLite
+        try:
+            storage.sql_query("SELECT 1")
+            checks["sqlite"] = "ok"
+        except Exception:
+            checks["sqlite"] = "error"
+        # ChromaDB
+        try:
+            storage.chroma_collection("_health_check")
+            checks["chromadb"] = "ok"
+        except Exception:
+            checks["chromadb"] = "error"
+        all_ok = all(v == "ok" for v in checks.values())
+        return {"status": "healthy" if all_ok else "degraded", "checks": checks}
 
     @app.get("/api/auth/token")
     async def get_token(request: Request):
@@ -210,8 +256,34 @@ def create_app(config: Config) -> FastAPI:
     async def get_ws_ticket(request: Request):
         """生成一次性 WebSocket ticket（30 秒有效），避免在 URL 中暴露 token。"""
         ticket = secrets.token_urlsafe(32)
-        _ws_tickets[ticket] = time.time() + 30
+        await add_ws_ticket(ticket)
         return {"ticket": ticket}
+
+    @app.post("/api/auth/rotate-token")
+    async def rotate_token(request: Request):
+        """生成新 API token，旧 token 立即失效。需要旧 token 认证。"""
+        new_token = secrets.token_hex(32)
+        token_path = os.path.join(request.app.state.config.data_dir, ".api_token")
+        with open(token_path, "w") as f:
+            f.write(new_token)
+        try:
+            os.chmod(token_path, 0o600)
+        except (OSError, NotImplementedError):
+            pass
+        request.app.state.auth_token = new_token
+        logger.info("API auth token rotated")
+        return {"token": new_token}
+
+    @app.post("/api/auth/pair")
+    async def pair_device(request: Request):
+        """移动端配对：用 6 位配对码交换 API token。"""
+        body = await request.json()
+        pair_code = body.get("code", "")
+        expected = getattr(request.app.state, "pair_code", None)
+        if expected is None or pair_code != expected:
+            raise HTTPException(status_code=403, detail="Invalid pair code")
+        request.app.state.pair_code = None  # 一次性使用
+        return {"token": request.app.state.auth_token, "host": request.client.host}
 
     @app.get("/api/plugins")
     async def list_plugins():
@@ -248,10 +320,16 @@ def create_app(config: Config) -> FastAPI:
         allowed = sec.allow_cloud(doc_id)
         return {"allowed": allowed}
 
-    @app.get("/api/security/audit-log")
-    async def audit_log(request: Request):
+    @app.post("/api/security/approve-cloud/{doc_id}")
+    async def approve_cloud(doc_id: str, request: Request):
         sec = request.app.state.security
-        return {"entries": sec.audit_log()}
+        sec.approve_cloud(doc_id)
+        return {"status": "ok"}
+
+    @app.get("/api/security/audit-log")
+    async def audit_log(request: Request, limit: int = 100, offset: int = 0):
+        sec = request.app.state.security
+        return {"entries": sec.audit_log(limit=limit, offset=offset)}
 
     @app.get("/api/settings")
     async def get_settings(request: Request):
@@ -285,30 +363,30 @@ def create_app(config: Config) -> FastAPI:
     # WebSocket for real-time push
     @app.websocket("/api/ws")
     async def websocket_endpoint(ws: WebSocket):
-        # 使用一次性 ticket 替代长期 token，避免凭据在 URL 中暴露
-        ticket = ws.query_params.get("ticket", "")
-        now = time.time()
-        for t in list(_ws_tickets.keys()):
-            if _ws_tickets[t] < now:
-                del _ws_tickets[t]
-        if ticket not in _ws_tickets:
-            await ws.close(code=4001, reason="Unauthorized")
+        if not await check_ws_connection_limit():
+            await ws.close(code=4002, reason="Too many connections")
             return
-        del _ws_tickets[ticket]  # 一次性使用
+        ticket = ws.query_params.get("ticket", "")
+        if not await consume_ws_ticket(ticket):
+            await ws.close(code=4001, reason="Unauthorized")
+            release_ws_connection()
+            return
         await ws.accept()
         # Forward event bus events to WebSocket
         async def forward(data: dict):
             try:
                 await ws.send_json({"event": "paper.saved", "data": data})
             except Exception:
-                pass
+                logger.warning("WS forward failed", exc_info=True)
 
         bus.on("paper.saved", forward)
         try:
             while True:
-                await ws.receive_text()  # keep alive
+                await ws.receive_text()
         except WebSocketDisconnect:
             bus.off("paper.saved", forward)
+        finally:
+            release_ws_connection()
 
     # Scheduler routes
     @app.get("/api/scheduler")

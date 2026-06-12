@@ -2,10 +2,10 @@
 
 # 研墨 / Yanmo
 
-[![Tests](https://img.shields.io/badge/tests-49%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
 
 **一個跑在你電腦上、資料不出門的科研助手。**
 
@@ -36,10 +36,31 @@ npm run dev
 
 ### 桌面應用程式
 
-> **注意 (2026-05):** 主要維護的前端是 React Web 應用程式 (`frontend/`)。
-> Tauri 桌面殼 (`frontend/src-tauri/`) 和 Qt 前端 (`frontend_qt/`) 已
-> **廢棄**，將在未來版本中移除。維護三套前端對小型團隊不可持續。
-> 如果您依賴 Tauri 或 Qt 前端，請開 issue 討論遷移到 Web 前端。
+從 [Releases](https://github.com/sixtdreanight/Yanmo/releases) 下載安裝包：
+
+| 平台 | 格式 | 大小 |
+|------|------|------|
+| Windows 10/11 | `.msi` | ~50MB |
+| macOS 12+ | `.dmg` | ~50MB |
+| Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
+
+桌面應用程式使用 Tauri 殼打包 React 前端，自動啟動 Python 後端。需 Python 3.11+ 和 Ollama。
+
+### 行動端（配套應用）
+
+行動端通過局域網連接桌面後端：
+
+| 平台 | 格式 |
+|------|------|
+| Android 8+ | `.apk` |
+| iOS 16+ | 開發者簽名 `.ipa` |
+
+1. 桌面端打開 **設定 → 行動端配對**，生成配對碼
+2. 行動端輸入桌面 IP 和配對碼完成連接
+
+### Qt 桌面（已廢棄）
+
+> Qt 前端 (`frontend_qt/`) 已廢棄，請使用 Tauri 桌面應用程式或 React Web 前端。
 
 ---
 

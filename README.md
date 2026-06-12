@@ -2,10 +2,10 @@
 
 # Yanmo (研墨)
 
-[![Tests](https://img.shields.io/badge/tests-49%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
 
 **A research assistant that runs on your own machine. Your data stays put.**
 
@@ -17,10 +17,42 @@ Desktop application, not a web app. Runs on Windows, Linux, and macOS.
 
 ---
 
-## Installation
+## Why Yanmo?
+
+| | Yanmo | General AI Chat | Research Rabbit | Zotero |
+|---|---|---|---|---|
+| **Data stays local** | Yes (Ollama) | No | No | Partial |
+| **Formula verification** | Dual-channel (SymPy + basic) | No | No | No |
+| **Multi-source paper search** | ArXiv + Semantic Scholar + DBLP | No | Yes | No |
+| **Triple dedup** | Title + arxiv_id + DOI | N/A | Partial | Partial |
+| **AI-text humanizer** | Built-in (Chinese + English) | No | No | No |
+| **Plugin extensibility** | Yes | No | No | Yes |
+| **Advisor direction decoder** | Yes | Prompt engineering | No | No |
+
+---
+
+## Who is This For?
+
+- **Graduate students** drowning in advisor feedback, paper tracking, and thesis writing
+- **Research engineers** who need formula safety guarantees and can't send proprietary work to cloud APIs
+- **Independent researchers** who want a unified toolchain without switching between 5 different apps
+
+---
+
+## Quick Start
 
 Requires Python 3.11+, Node.js 18+, and Ollama.
 
+**One-shot install:**
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+
+# Windows (PowerShell)
+Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.ps1 | Invoke-Expression
+```
+
+**Manual install:**
 ```bash
 pip install -e ".[dev]"
 python -m backend.main
@@ -36,13 +68,39 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
+**Docker:**
+```bash
+docker compose up
+```
+
 ### Desktop App
 
-> **Note (2026-05):** The primary supported frontend is the React Web app (`frontend/`).
-> The Tauri desktop shell (`frontend/src-tauri/`) and the Qt frontend (`frontend_qt/`) are
-> **deprecated** and will be removed in a future release. Maintaining three frontends is
-> unsustainable for a small team. If you rely on the Tauri or Qt frontend, please open an
-> issue to discuss migration to the Web frontend.
+Download the installer for your platform from [Releases](https://github.com/sixtdreanight/Yanmo/releases):
+
+| Platform | Format | Size |
+|----------|--------|------|
+| Windows 10/11 | `.msi` | ~50MB |
+| macOS 12+ | `.dmg` | ~50MB |
+| Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
+
+> **Note:** The desktop app bundles the React frontend with a Tauri shell. Python 3.11+ and Ollama are required as runtime dependencies (not bundled).
+
+### Mobile App (Companion)
+
+The mobile app connects to your desktop backend over the same WiFi network:
+
+| Platform | Format |
+|----------|--------|
+| Android 8+ | `.apk` |
+| iOS 16+ | Developer-signed `.ipa` |
+
+1. On desktop: go to **Settings → 移动端配对**, generate a pairing code
+2. On mobile: enter the desktop IP and pairing code to connect
+3. Your phone becomes a remote control for all desktop features
+
+### Desktop App (Legacy / Qt)
+
+> **Note:** The Qt frontend (`frontend_qt/`) is deprecated. Use the Tauri desktop app or the React Web app instead.
 
 ---
 

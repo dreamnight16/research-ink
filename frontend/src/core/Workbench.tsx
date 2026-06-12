@@ -3,6 +3,7 @@ import { TabBar } from './TabBar';
 import { SidePanel } from './SidePanel';
 import { allPlugins } from './pluginRegistry';
 import { ChatWindow } from '../shared/ChatWindow';
+import { Settings } from '../shared/Settings';
 
 const TABS = [
   { key: 'term-advisor', label: '读懂导师' },
@@ -16,6 +17,7 @@ const EMOJIS = ['☕', '', '', '', '', ''];
 
 export const Workbench: React.FC = () => {
   const [activeTab, setActiveTab] = useState('term-advisor');
+  const [showSettings, setShowSettings] = useState(false);
   const [greeting] = useState(() => {
     const hour = new Date().getHours();
     if (hour < 7) return '夜深了，注意休息';
@@ -60,6 +62,23 @@ export const Workbench: React.FC = () => {
         }}>
           {greeting}
         </span>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          title="设置"
+          style={{
+            background: showSettings ? 'var(--accent-soft)' : 'transparent',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontSize: 16,
+            color: 'var(--text-secondary)',
+            transition: 'all var(--transition)',
+          }}
+        >
+          设置
+        </button>
       </header>
 
       {/* Tab bar */}
@@ -67,31 +86,34 @@ export const Workbench: React.FC = () => {
 
       {/* Main area */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <main style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 28,
-          background: 'var(--bg-base)',
-        }}>
-          {/* Active tab indicator */}
-          <div style={{
-            fontSize: 13,
-            color: 'var(--text-muted)',
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
+        {showSettings ? (
+          <main style={{
+            flex: 1, overflow: 'auto', padding: 28,
+            background: 'var(--bg-base)',
           }}>
-            <span>{tabEmoji}</span>
-            <span>{TABS.find((t) => t.key === activeTab)?.label}</span>
-          </div>
-
-          <ActiveComponent />
-        </main>
-
-        <SidePanel>
-          <ChatWindow />
-        </SidePanel>
+            <Settings />
+          </main>
+        ) : (
+          <>
+            <main style={{
+              flex: 1, overflow: 'auto', padding: 28,
+              background: 'var(--bg-base)',
+            }}>
+              <div style={{
+                fontSize: 13, color: 'var(--text-muted)',
+                marginBottom: 20, display: 'flex',
+                alignItems: 'center', gap: 6,
+              }}>
+                <span>{tabEmoji}</span>
+                <span>{TABS.find((t) => t.key === activeTab)?.label}</span>
+              </div>
+              <ActiveComponent />
+            </main>
+            <SidePanel>
+              <ChatWindow />
+            </SidePanel>
+          </>
+        )}
       </div>
     </div>
   );

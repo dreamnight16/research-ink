@@ -2,10 +2,10 @@
 
 # 研墨 / Yanmo
 
-[![Tests](https://img.shields.io/badge/tests-49%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
 
 **あなたのコンピュータ上で動作し、データが外部に出ない研究アシスタント。**
 
@@ -36,10 +36,31 @@ npm run dev
 
 ### デスクトップアプリケーション
 
-> **注意 (2026-05):** メインでメンテナンスされているフロントエンドは React Web アプリケーション (`frontend/`) です。
-> Tauri デスクトップシェル (`frontend/src-tauri/`) および Qt フロントエンド (`frontend_qt/`) は
-> **非推奨**となり、将来のバージョンで削除される予定です。3つのフロントエンドを維持することは小規模チームには持続不可能です。
-> Tauri または Qt フロントエンドに依存している場合は、Web フロントエンドへの移行について issue を開いてご相談ください。
+[Releases](https://github.com/sixtdreanight/Yanmo/releases) からインストーラーをダウンロード：
+
+| プラットフォーム | 形式 | サイズ |
+|------|------|------|
+| Windows 10/11 | `.msi` | ~50MB |
+| macOS 12+ | `.dmg` | ~50MB |
+| Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
+
+Tauri シェルで React フロントエンドをパッケージ化、Python バックエンドを自動起動。Python 3.11+ と Ollama が必要です。
+
+### モバイル（コンパニオンアプリ）
+
+モバイルアプリは LAN 経由でデスクトップバックエンドに接続します：
+
+| プラットフォーム | 形式 |
+|------|------|
+| Android 8+ | `.apk` |
+| iOS 16+ | 開発者署名 `.ipa` |
+
+1. デスクトップで **設定 → モバイルペアリング** を開き、ペアリングコードを生成
+2. モバイルでデスクトップ IP とペアリングコードを入力して接続
+
+### Qt デスクトップ（非推奨）
+
+> Qt フロントエンド (`frontend_qt/`) は非推奨です。Tauri デスクトップアプリまたは React Web フロントエンドを使用してください。
 
 ---
 

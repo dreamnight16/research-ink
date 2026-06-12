@@ -1,24 +1,25 @@
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
-from backend.plugins.literature.summarizer import summarize_paper
-from backend.plugins.literature.dedup import deduplicate
+
 from backend.plugins.literature.citation_classifier import classify_citations, summarize_citations
 from backend.plugins.literature.citation_graph import build_graph
-from backend.plugins.literature.systematic_review import get_workflow
 from backend.plugins.literature.crawlers import CrawlerManager
 from backend.plugins.literature.crawlers.arxiv import ArxivCrawler
-from backend.plugins.literature.crawlers.semantic_scholar import SemanticScholarCrawler
 from backend.plugins.literature.crawlers.dblp import DBLPCrawler
+from backend.plugins.literature.crawlers.semantic_scholar import SemanticScholarCrawler
+from backend.plugins.literature.dedup import deduplicate
+from backend.plugins.literature.summarizer import summarize_paper
+from backend.plugins.literature.systematic_review import get_workflow
 
 
 class FetchRequest(BaseModel):
     query: str = Field(max_length=500)
     max_results: int = Field(default=10, ge=1, le=50)
-    sources: list[str] | None = None
+    sources: list[str] | None = Field(default=None, max_length=10)
 
 
 class InterestsUpdate(BaseModel):
-    keywords: list[str] = Field(max_length=20)
+    keywords: list[str] = Field(max_length=20, min_length=0)
 
 
 def _get_manager() -> CrawlerManager:
@@ -43,22 +44,19 @@ def create_router(plugin) -> APIRouter:
     @router.get("/interests")
     async def get_interests(request: Request):
         storage = request.app.state.storage
-        storage.sql_execute(
-            "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)"
-        )
         rows = storage.sql_query("SELECT value FROM kv WHERE key = 'literature_interests'")
         if rows:
             import json
-            return {"keywords": json.loads(rows[0]["value"])}
+            try:
+                return {"keywords": json.loads(rows[0]["value"])}
+            except (json.JSONDecodeError, IndexError):
+                pass
         return {"keywords": []}
 
     @router.put("/interests")
     async def set_interests(req: InterestsUpdate, request: Request):
         storage = request.app.state.storage
         import json
-        storage.sql_execute(
-            "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)"
-        )
         storage.sql_execute(
             "INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)",
             ("literature_interests", json.dumps(req.keywords)),
@@ -68,15 +66,15 @@ def create_router(plugin) -> APIRouter:
     @router.post("/feed")
     async def get_feed(request: Request):
         storage = request.app.state.storage
-        storage.sql_execute(
-            "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)"
-        )
         rows = storage.sql_query("SELECT value FROM kv WHERE key = 'literature_interests'")
 
         import json
         keywords: list[str] = []
         if rows:
-            keywords = json.loads(rows[0]["value"])
+            try:
+                keywords = json.loads(rows[0]["value"])
+            except (json.JSONDecodeError, IndexError):
+                keywords = []
 
         queries = keywords if keywords else ["machine learning"]
 

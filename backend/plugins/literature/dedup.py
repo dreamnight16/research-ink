@@ -17,10 +17,15 @@ def title_similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, normalize_title(a), normalize_title(b)).ratio()
 
 
+DEDUP_FULL_THRESHOLD = 500
+
 def deduplicate(papers: list[dict[str, Any]], threshold: float = 0.85) -> list[dict[str, Any]]:
     """Remove duplicate papers by ID, DOI, and title similarity."""
     seen_ids: set[str] = set()
     dois: set[str] = set()
+    # For very large lists, skip O(n²) title similarity to avoid performance degradation
+    if len(papers) > DEDUP_FULL_THRESHOLD:
+        threshold = 1.0
     titles: list[tuple[str, str]] = []  # (normalized_title, paper_id)
     result: list[dict[str, Any]] = []
 

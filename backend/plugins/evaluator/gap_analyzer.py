@@ -2,7 +2,6 @@
 
 from typing import Any
 
-
 GAP_TEMPLATES = [
     ("数据集偏差", "现有工作多基于 {dataset_hint}，对其他领域/语言/模态的泛化性研究不足"),
     ("规模上限", "当前方法在 {scale_hint} 上的表现已验证，但更大规模场景下的可行性未知"),

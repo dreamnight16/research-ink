@@ -1,14 +1,17 @@
 import asyncio
+import logging
 from collections import defaultdict
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 Handler = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
+logger = logging.getLogger(__name__)
 
 
 class EventBus:
     def __init__(self) -> None:
         self._handlers: dict[str, list[Handler]] = defaultdict(list)
+        self._lock = asyncio.Lock()
 
     def on(self, event: str, handler: Handler) -> None:
         self._handlers[event].append(handler)
@@ -20,7 +23,13 @@ class EventBus:
             ]
 
     async def emit(self, event: str, data: dict[str, Any]) -> None:
-        handlers = self._handlers.get(event, [])
-        tasks = [handler(data) for handler in handlers]
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+        handlers = list(self._handlers.get(event, []))
+        if not handlers:
+            return
+        results = await asyncio.gather(*[handler(data) for handler in handlers], return_exceptions=True)
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(
+                    "EventBus handler for '%s' raised: %s", event, result,
+                    exc_info=result,
+                )

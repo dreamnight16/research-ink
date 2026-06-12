@@ -1,8 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage, Classification } from '../core/types';
 
+const STORAGE_KEY = 'yanmo-chat-messages';
+
+function loadMessages(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: ChatMessage[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-100)));
+  } catch { /* quota exceeded, silently drop */ }
+}
+
 export const ChatWindow: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages);
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState<Classification>('cautious');
   const [loading, setLoading] = useState(false);
@@ -12,10 +29,18 @@ export const ChatWindow: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const updateMessages = (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
+    setMessages((prev) => {
+      const next = updater(prev);
+      saveMessages(next);
+      return next;
+    });
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const userMsg: ChatMessage = { role: 'user', content: input };
-    setMessages((prev) => [...prev, userMsg]);
+    updateMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
@@ -30,9 +55,9 @@ export const ChatWindow: React.FC = () => {
         }),
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
+      updateMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
     } catch (e) {
-      setMessages((prev) => [
+      updateMessages((prev) => [
         ...prev,
         { role: 'assistant', content: `唔，出了一点问题：${(e as Error).message}` },
       ]);

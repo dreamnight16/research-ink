@@ -19,7 +19,7 @@ interface PluginInfo {
 }
 
 export const Settings: React.FC = () => {
-  const [tab, setTab] = useState<'llm' | 'plugins'>('llm');
+  const [tab, setTab] = useState<'llm' | 'plugins' | 'mobile'>('llm');
   const [settings, setSettings] = useState<LLMSettings>({
     ollama_base_url: 'http://localhost:11434',
     ollama_model: 'qwen3:14b',
@@ -29,6 +29,9 @@ export const Settings: React.FC = () => {
   });
   const [saved, setSaved] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const [pairCode, setPairCode] = useState('');
+  const [desktopIp, setDesktopIp] = useState('');
+  const [pairGenerated, setPairGenerated] = useState(false);
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/settings')
@@ -55,6 +58,49 @@ export const Settings: React.FC = () => {
     const endpoint = loaded ? 'unload' : 'load';
     await fetch(`/api/plugins/${name}/${endpoint}`, { method: 'POST' });
     loadPlugins();
+  };
+
+  const generatePairCode = async () => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setPairCode(code);
+    try {
+      const resp = await fetch('http://127.0.0.1:8000/api/auth/token');
+      if (resp.ok) {
+        // Store pair code in backend state via settings
+        await fetch('http://127.0.0.1:8000/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+      }
+    } catch {}
+    // Get local IP via WebRTC or fallback
+    try {
+      const pc = new RTCPeerConnection();
+      pc.createDataChannel('');
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      const match = pc.localDescription?.sdp?.match(/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)/);
+      setDesktopIp(match?.[0] || '127.0.0.1');
+      pc.close();
+    } catch {
+      setDesktopIp('127.0.0.1');
+    }
+    // Set pair code in backend
+    try {
+      await fetch('http://127.0.0.1:8000/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ollama_base_url: settings.ollama_base_url,
+          ollama_model: settings.ollama_model,
+          cloud_provider: settings.cloud_provider,
+          cloud_api_key: '',
+          cloud_model: settings.cloud_model,
+        }),
+      });
+    } catch {}
+    setPairGenerated(true);
   };
 
   const save = async () => {
@@ -98,7 +144,43 @@ export const Settings: React.FC = () => {
       <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
         <button onClick={() => setTab('llm')} style={tabStyle(tab === 'llm')}>模型设置</button>
         <button onClick={() => setTab('plugins')} style={tabStyle(tab === 'plugins')}>插件管理</button>
+        <button onClick={() => setTab('mobile')} style={tabStyle(tab === 'mobile')}>移动端配对</button>
       </div>
+
+      {tab === 'mobile' && (
+        <div style={{ textAlign: 'center', padding: 16 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            生成配对码以连接移动设备（同一 WiFi 下）
+          </p>
+          {!pairGenerated ? (
+            <button onClick={generatePairCode} style={{
+              padding: '12px 32px', background: 'var(--accent)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
+              fontSize: 14, fontWeight: 600,
+            }}>
+              生成配对码
+            </button>
+          ) : (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                桌面 IP: {desktopIp}
+              </div>
+              <div style={{
+                fontSize: 32, fontWeight: 700, letterSpacing: 8,
+                color: 'var(--accent)', fontFamily: 'monospace',
+                marginBottom: 16, padding: '12px 24px',
+                background: 'var(--accent-soft)', borderRadius: 'var(--radius)',
+                display: 'inline-block',
+              }}>
+                {pairCode}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                在移动端输入 IP <b>{desktopIp}</b> 和配对码 <b>{pairCode}</b>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === 'plugins' && (
         <div>

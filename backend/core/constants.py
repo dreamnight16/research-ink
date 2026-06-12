@@ -1,0 +1,32 @@
+# Timeouts and intervals (seconds)
+DEFAULT_LLM_TIMEOUT = 120.0
+DEFAULT_CRAWL_TIMEOUT = 30
+DEFAULT_TICK_INTERVAL = 30.0
+AUTO_CRAWL_INTERVAL = 3600
+WS_TICKET_TTL = 30
+RATE_LIMIT_WINDOW = 60
+RATE_LIMIT_MAX = 60
+
+# Data limits
+MAX_FEED_RESULTS = 30
+MAX_CRAWL_RESULTS = 8
+MAX_INTEREST_KEYWORDS = 3
+AUDIT_LOG_MAX_ENTRIES = 10000
+PAPER_ANALYSIS_LIMIT = 10
+GAP_ANALYSIS_LIMIT = 8
+CITATION_GRAPH_EDGE_LIMIT = 50
+TITLE_TRUNCATE = 60
+DEDUP_FULL_THRESHOLD = 500
+MAX_BODY_SIZE = 5 * 1024 * 1024
+WS_MAX_CONNECTIONS = 50
+WS_TICKET_MAX = 1000
+RATE_LIMIT_MAX_IPS = 10000
+MAX_TASK_EXECUTION_SECONDS = 600
+
+# API URLs
+ARXIV_API = "https://export.arxiv.org/api/query"
+SEMANTIC_SCHOLAR_API = "https://api.semanticscholar.org/graph/v1/paper/search"
+DBLP_API = "https://dblp.org/search/publ/api"
+ANTHROPIC_API = "https://api.anthropic.com/v1/messages"
+OPENAI_API = "https://api.openai.com/v1/chat/completions"
+DEEPSEEK_API = "https://api.deepseek.com/v1/chat/completions"

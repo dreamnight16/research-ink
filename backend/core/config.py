@@ -1,6 +1,6 @@
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -55,21 +55,33 @@ class Config:
     def load(cls, data_dir: str) -> "Config":
         config_path = Path(data_dir) / "config.json"
         if config_path.exists():
-            with open(config_path) as f:
-                raw = json.load(f)
-            cfg = cls(**{k: v for k, v in raw.items() if k in cls.__dataclass_fields__})
-            # 优先从 keyring 加载 API 密钥（而非 config.json 明文）
-            keyring_key = _load_cloud_api_key()
-            if keyring_key:
-                cfg.cloud_api_key = keyring_key
-            elif cfg.cloud_api_key:
-                # 从旧 config.json 迁移到 keyring
-                logger.info("正在将 cloud_api_key 从 config.json 迁移到系统 keyring...")
-                _save_cloud_api_key(cfg.cloud_api_key)
-                # 清除明文副本
-                cfg.cloud_api_key = ""
-                cfg.save()
-            return cfg
+            try:
+                with open(config_path) as f:
+                    raw = json.load(f)
+                if not isinstance(raw, dict):
+                    raise ValueError("config.json is not a JSON object")
+                cfg = cls(**{k: v for k, v in raw.items() if k in cls.__dataclass_fields__})
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                logger.warning("config.json is corrupted (%s), using defaults", e)
+                broken_path = config_path.with_suffix(".json.broken")
+                try:
+                    config_path.rename(broken_path)
+                    logger.info("Corrupted config backed up to %s", broken_path)
+                except OSError:
+                    pass
+                cfg = cls()
+            else:
+                # 优先从 keyring 加载 API 密钥（而非 config.json 明文）
+                keyring_key = _load_cloud_api_key()
+                if keyring_key:
+                    cfg.cloud_api_key = keyring_key
+                elif cfg.cloud_api_key:
+                    # 从旧 config.json 迁移到 keyring
+                    logger.info("正在将 cloud_api_key 从 config.json 迁移到系统 keyring...")
+                    _save_cloud_api_key(cfg.cloud_api_key)
+                    cfg.cloud_api_key = ""
+                    cfg.save()
+                return cfg
         cfg = cls()
         cfg.data_dir = data_dir
         return cfg

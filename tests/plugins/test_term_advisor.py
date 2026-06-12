@@ -89,4 +89,3 @@ def test_plugin_has_required_methods():
     assert hasattr(plugin, "on_load")
     assert hasattr(plugin, "on_unload")
     assert hasattr(plugin, "get_routes")
-    assert hasattr(plugin, "get_commands")

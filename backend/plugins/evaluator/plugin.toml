@@ -2,4 +2,3 @@
 name = "evaluator"
 display_name = "审项目"
 version = "0.1.0"
-dependencies = ["knowledge-base"]

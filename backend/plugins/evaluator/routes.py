@@ -1,18 +1,19 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 from backend.plugins.evaluator.evaluate import evaluate_project
 from backend.plugins.evaluator.gap_analyzer import analyze_gaps
 
 
 class EvalRequest(BaseModel):
-    title: str
-    description: str
-    field: str = ""
+    title: str = Field(max_length=500)
+    description: str = Field(max_length=5000)
+    field: str = Field(default="", max_length=200)
 
 
 class GapRequest(BaseModel):
-    papers: list[dict]
-    field: str = ""
+    papers: list[dict] = Field(max_length=200)
+    field: str = Field(default="", max_length=200)
 
 
 def create_router(plugin) -> APIRouter:

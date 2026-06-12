@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
+from backend.core.base_plugin import BasePlugin
 
-class FormulaPlugin:
+
+class FormulaPlugin(BasePlugin):
     name = "formula"
     display_name = "验公式"
     version = "0.1.0"
@@ -17,7 +19,5 @@ class FormulaPlugin:
         from backend.plugins.formula.routes import create_router
         return create_router(self)
 
-    def get_commands(self) -> list:
-        return ["/verify", "/convert"]
 
 Plugin = FormulaPlugin

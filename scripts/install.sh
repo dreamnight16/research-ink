@@ -1,50 +1,46 @@
-#!/bin/bash
-# 研墨 (YanMo) — one-line install script
+#!/usr/bin/env bash
+# 研墨 (Yanmo) — one-shot install script
 # curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+set -euo pipefail
 
-set -e
-
-echo "=== 研墨 YanMo Installer ==="
+echo "=== 研墨 Yanmo Installer ==="
+echo ""
 
 # Check Python
-if ! command -v python3 &> /dev/null; then
-    echo "Python 3.11+ required. Install it first: https://python.org"
+if ! command -v python3 &>/dev/null; then
+    echo "ERROR: Python 3.11+ is required. Install it from https://python.org"
     exit 1
 fi
+echo "[OK] Python: $(python3 --version)"
 
-# Check Node
-if ! command -v node &> /dev/null; then
-    echo "Node.js 18+ required. Install it first: https://nodejs.org"
-    exit 1
+# Check Node.js
+if ! command -v node &>/dev/null; then
+    echo "WARNING: Node.js not found. Frontend dev server won't work."
+    echo "  Install from https://nodejs.org"
+else
+    echo "[OK] Node.js: $(node --version)"
 fi
 
 # Check Ollama
-if ! command -v ollama &> /dev/null; then
-    echo "Ollama not found. Install it: curl -fsSL https://ollama.com/install.sh | sh"
-    exit 1
-fi
-
-INSTALL_DIR="${YANMO_HOME:-$HOME/.yanmo}"
-
-echo "Installing to $INSTALL_DIR..."
-
-# Clone or pull
-if [ -d "$INSTALL_DIR/repo" ]; then
-    cd "$INSTALL_DIR/repo"
-    git pull --ff-only origin master
+if ! command -v ollama &>/dev/null; then
+    echo "WARNING: Ollama not found. LLM features require Ollama."
+    echo "  Install from https://ollama.com"
 else
-    mkdir -p "$INSTALL_DIR"
-    git clone https://github.com/sixtdreanight/Yanmo.git "$INSTALL_DIR/repo"
-    cd "$INSTALL_DIR/repo"
+    echo "[OK] Ollama: $(ollama --version 2>&1 | head -1)"
 fi
 
-pip install -e ".[dev]" --quiet
-cd frontend && npm install --silent
+echo ""
+echo "Installing Python dependencies..."
+pip install -e ".[dev]"
 
 echo ""
-echo "Installed. Start with:"
-echo "  python -m backend.main"
-echo "  cd $INSTALL_DIR/repo/frontend && npm run dev"
+echo "Installing frontend dependencies..."
+if [ -d frontend ]; then
+    cd frontend && npm install && cd ..
+fi
+
 echo ""
-echo "Or build the desktop app:"
-echo "  cd $INSTALL_DIR/repo/frontend && cargo tauri build"
+echo "=== Done ==="
+echo "Start the backend:   python -m backend.main"
+echo "Start the frontend:  cd frontend && npm run dev"
+echo "Open:                http://localhost:5173"

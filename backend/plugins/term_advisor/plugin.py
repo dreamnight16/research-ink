@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
+from backend.core.base_plugin import BasePlugin
 
-class TermAdvisorPlugin:
+
+class TermAdvisorPlugin(BasePlugin):
     name = "term_advisor"
     display_name = "读懂导师"
     version = "0.1.0"
@@ -17,7 +19,5 @@ class TermAdvisorPlugin:
         from backend.plugins.term_advisor.routes import create_router
         return create_router(self)
 
-    def get_commands(self) -> list:
-        return ["/parse", "/terms"]
 
 Plugin = TermAdvisorPlugin

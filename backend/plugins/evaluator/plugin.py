@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
+from backend.core.base_plugin import BasePlugin
 
-class EvaluatorPlugin:
+
+class EvaluatorPlugin(BasePlugin):
     name = "evaluator"
     display_name = "审项目"
     version = "0.1.0"
@@ -17,7 +19,5 @@ class EvaluatorPlugin:
         from backend.plugins.evaluator.routes import create_router
         return create_router(self)
 
-    def get_commands(self) -> list:
-        return ["/evaluate"]
 
 Plugin = EvaluatorPlugin

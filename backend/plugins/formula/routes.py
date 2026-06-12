@@ -1,11 +1,12 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from backend.plugins.formula.verify import verify_formula, sympy_verify, latex_to_sympy
+from pydantic import BaseModel, Field
+
+from backend.plugins.formula.verify import latex_to_sympy, sympy_verify, verify_formula
 
 
 class VerifyRequest(BaseModel):
-    expression: str
-    domain: str = "real"
+    expression: str = Field(max_length=5000)
+    domain: str = Field(default="real", max_length=50)
 
 
 def create_router(plugin) -> APIRouter:
