@@ -25,7 +25,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("研墨")
     app.setOrganizationName("YanMo")
-    app.setOrganizationDomain("yanmo.app")
+    app.setOrganizationDomain("research-ink.app")
 
     window = MainWindow()
     window.show()

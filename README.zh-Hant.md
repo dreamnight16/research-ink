@@ -1,8 +1,8 @@
 **語言 / Language:** [English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja.md)
 
-# 研墨 / Yanmo
+# 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,7 +36,7 @@ npm run dev
 
 ### 桌面應用程式
 
-從 [Releases](https://github.com/sixtdreanight/Yanmo/releases) 下載安裝包：
+從 [Releases](https://github.com/sixtdreanight/ResearchInk/releases) 下載安裝包：
 
 | 平台 | 格式 | 大小 |
 |------|------|------|
@@ -94,7 +94,7 @@ npm run dev
 
 ## 外掛程式系統
 
-外掛程式存放於 `~/.yanmo/plugins/`。透過設定 → 外掛程式管理器載入。最低要求：`plugin.toml` + `plugin.py`。開發指南見 `plugin_schema/API.md`。支援生命週期管理、熱載入/卸載和事件匯流排。
+外掛程式存放於 `~/.research-ink/plugins/`。透過設定 → 外掛程式管理器載入。最低要求：`plugin.toml` + `plugin.py`。開發指南見 `plugin_schema/API.md`。支援生命週期管理、熱載入/卸載和事件匯流排。
 
 ---
 
@@ -114,7 +114,7 @@ npm run dev
 
 - 機密資料強制本地；雲端操作自動攔截
 - 雲端出站流量有稽核日誌
-- 資料儲存在 `~/.yanmo/`，隨時備份
+- 資料儲存在 `~/.research-ink/`，隨時備份
 
 ## 技術棧
 

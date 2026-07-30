@@ -75,7 +75,7 @@
 - New: `Dockerfile`, `docker-compose.yml`, `.env.example`
 - New: `scripts/install.sh`, `scripts/install.ps1`
 - New: `plugin_schema/example_plugin/` (reference implementation)
-- Updated: `README.md` (Why Yanmo, Who is for, Quick Start, quantified value)
+- Updated: `README.md` (Why ResearchInk, Who is for, Quick Start, quantified value)
 - Updated: `plugin_schema/API.md` (corrected paths, updated interface)
 - Updated: `SECURITY.md` (persistence model, token rotation)
 
@@ -85,4 +85,4 @@
 - Chat history persisted to localStorage
 - Settings save confirmation toast
 
-[0.1.1]: https://github.com/sixtdreanight/Yanmo/releases/tag/v0.1.1
+[0.1.1]: https://github.com/sixtdreanight/ResearchInk/releases/tag/v0.1.1

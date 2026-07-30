@@ -1,8 +1,8 @@
 **言語 / Language:** [English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja.md)
 
-# 研墨 / Yanmo
+# 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,7 +36,7 @@ npm run dev
 
 ### デスクトップアプリケーション
 
-[Releases](https://github.com/sixtdreanight/Yanmo/releases) からインストーラーをダウンロード：
+[Releases](https://github.com/sixtdreanight/ResearchInk/releases) からインストーラーをダウンロード：
 
 | プラットフォーム | 形式 | サイズ |
 |------|------|------|
@@ -94,7 +94,7 @@ Tauri シェルで React フロントエンドをパッケージ化、Python バ
 
 ## プラグインシステム
 
-プラグインは `~/.yanmo/plugins/` に配置します。設定 → プラグインマネージャーからロードします。最低要件：`plugin.toml` + `plugin.py`。開発ガイドは `plugin_schema/API.md` を参照してください。ライフサイクル管理、ホットロード/アンロード、イベントバスをサポートしています。
+プラグインは `~/.research-ink/plugins/` に配置します。設定 → プラグインマネージャーからロードします。最低要件：`plugin.toml` + `plugin.py`。開発ガイドは `plugin_schema/API.md` を参照してください。ライフサイクル管理、ホットロード/アンロード、イベントバスをサポートしています。
 
 ---
 
@@ -114,7 +114,7 @@ Tauri シェルで React フロントエンドをパッケージ化、Python バ
 
 - 機密データはローカル強制、クラウド操作は自動ブロック
 - クラウドへの送信トラフィックは監査ログに記録
-- データは `~/.yanmo/` に保存され、いつでもバックアップ可能
+- データは `~/.research-ink/` に保存され、いつでもバックアップ可能
 
 ## 技術スタック
 

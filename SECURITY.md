@@ -33,7 +33,7 @@ Once a fix is ready, we will:
 
 ### Data Classification
 
-Yanmo uses a three-tier classification system for all data:
+ResearchInk uses a three-tier classification system for all data:
 
 | Level | Description | Cloud Allowed |
 |-------|-------------|---------------|
@@ -46,7 +46,7 @@ and survive application restarts.
 
 ### API Authentication
 
-- A 256-bit bearer token is generated on first launch and stored at `~/.yanmo/.api_token`
+- A 256-bit bearer token is generated on first launch and stored at `~/.research-ink/.api_token`
 - Token is retrievable only from localhost (`127.0.0.1`, `::1`)
 - Token can be rotated via `POST /api/auth/rotate-token` (requires current token)
 - Token comparison uses constant-time `secrets.compare_digest()` to prevent timing attacks
@@ -80,7 +80,7 @@ and survive application restarts.
 
 ### Data Storage
 
-- All data stored locally at `~/.yanmo/`
+- All data stored locally at `~/.research-ink/`
 - SQLite database uses WAL journal mode
 - ChromaDB vector embeddings are unencrypted (single-user local application)
 - API keys are stored in the system keyring when available (falls back to environment variables)

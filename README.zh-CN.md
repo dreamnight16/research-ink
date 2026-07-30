@@ -1,8 +1,8 @@
 **语言 / Language:** [English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja.md)
 
-# 研墨 / Yanmo
+# 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -22,10 +22,10 @@
 **一键安装：**
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.ps1 | Invoke-Expression
+Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
 ```
 
 **手动安装：**
@@ -51,7 +51,7 @@ docker compose up
 
 ### 桌面应用
 
-从 [Releases](https://github.com/sixtdreanight/Yanmo/releases) 下载安装包：
+从 [Releases](https://github.com/sixtdreanight/ResearchInk/releases) 下载安装包：
 
 | 平台 | 格式 | 大小 |
 |------|------|------|
@@ -110,7 +110,7 @@ docker compose up
 
 ## 插件系统
 
-插件存放于 `~/.yanmo/plugins/`。通过设置 → 插件管理器加载。最低要求：`plugin.toml` + `plugin.py`。开发指南见 `plugin_schema/API.md`。支持生命周期管理、热加载/卸载和事件总线。
+插件存放于 `~/.research-ink/plugins/`。通过设置 → 插件管理器加载。最低要求：`plugin.toml` + `plugin.py`。开发指南见 `plugin_schema/API.md`。支持生命周期管理、热加载/卸载和事件总线。
 
 ---
 
@@ -130,7 +130,7 @@ docker compose up
 
 - 机密数据强制本地；云端操作自动拦截
 - 云端出站流量有审计日志
-- 数据存储在 `~/.yanmo/`，随时备份
+- 数据存储在 `~/.research-ink/`，随时备份
 
 ## 技术栈
 

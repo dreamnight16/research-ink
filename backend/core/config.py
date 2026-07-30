@@ -6,7 +6,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_KEYRING_SERVICE = "com.yanmo.research-assistant"
+_KEYRING_SERVICE = "com.researchink.research-assistant"
 
 
 def _load_cloud_api_key() -> str:
@@ -46,7 +46,7 @@ class Config:
     cloud_provider: str = ""
     cloud_model: str = ""
     default_classification: str = "cautious"
-    data_dir: str = field(default_factory=lambda: str(Path.home() / ".yanmo"))
+    data_dir: str = field(default_factory=lambda: str(Path.home() / ".research-ink"))
     allow_untrusted_plugins: bool = False
 
     _SENSITIVE = {"cloud_api_key"}

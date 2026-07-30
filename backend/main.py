@@ -9,7 +9,7 @@ from backend.core.config import Config
 
 def main():
     import os
-    data_dir = str(Path.home() / ".yanmo")
+    data_dir = str(Path.home() / ".research-ink")
     config = Config.load(data_dir)
     app = create_app(config)
     host = os.environ.get("YANMO_HOST", "0.0.0.0")

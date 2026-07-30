@@ -13,7 +13,7 @@ def test_config_loads_defaults():
     assert cfg.cloud_provider == ""
     assert cfg.cloud_model == ""
     assert cfg.default_classification == "cautious"
-    assert cfg.data_dir == str(Path.home() / ".yanmo")
+    assert cfg.data_dir == str(Path.home() / ".research-ink")
 
 
 def test_config_save_and_load_from_file():

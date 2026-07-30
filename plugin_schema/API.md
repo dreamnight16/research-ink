@@ -11,7 +11,7 @@ my-plugin/
 └── (optional)      # Frontend components, data, etc.
 ```
 
-Drop it into `~/.yanmo/plugins/` and load from Settings > Plugins.
+Drop it into `~/.research-ink/plugins/` and load from Settings > Plugins.
 
 ## Manifest (plugin.toml)
 
@@ -106,4 +106,4 @@ Place a React component file alongside `plugin.py`. Register it in the frontend 
 
 ## Distribution
 
-Share your plugin as a zip file. Users extract it into `~/.yanmo/plugins/<plugin-name>/`.
+Share your plugin as a zip file. Users extract it into `~/.research-ink/plugins/<plugin-name>/`.

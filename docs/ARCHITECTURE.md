@@ -2,7 +2,7 @@
 
 ## Overview
 
-Yanmo is a local-first research assistant with a plugin-based architecture.
+ResearchInk is a local-first research assistant with a plugin-based architecture.
 The backend runs as a FastAPI server on `127.0.0.1:8000`. The frontend is a
 React SPA served by Vite.
 
@@ -51,7 +51,7 @@ React SPA served by Vite.
 │               Data Layer                     │
 │  ┌──────────┐ ┌──────────┐ ┌─────────────┐  │
 │  │ SQLite   │ │ ChromaDB │ │ File System  │  │
-│  │(research │ │(vectors) │ │(~/.yanmo/)   │  │
+│  │(research │ │(vectors) │ │(~/.research-ink/)   │  │
 │  │ .db)     │ │          │ │              │  │
 │  └──────────┘ └──────────┘ └─────────────┘  │
 └─────────────────────────────────────────────┘
@@ -125,7 +125,7 @@ User LaTeX → /api/formula/verify
 
 ## Security Model
 
-- **Authentication**: Local bearer token (256-bit, stored in `~/.yanmo/.api_token`)
+- **Authentication**: Local bearer token (256-bit, stored in `~/.research-ink/.api_token`)
 - **Authorization**: Token required for all endpoints except `/health`, `/docs`, `/api/auth/token`
 - **Data classification**: Secret → local only; Cautious → local unless approved; Public → cloud-allowed
 - **SSRF protection**: Ollama URL restricted to localhost

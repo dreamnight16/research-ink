@@ -1,4 +1,4 @@
-"""Hello World — A minimal example plugin for Yanmo."""
+"""Hello World — A minimal example plugin for ResearchInk."""
 from fastapi import APIRouter
 from backend.core.base_plugin import BasePlugin
 
@@ -19,7 +19,7 @@ class HelloWorldPlugin(BasePlugin):
 
         @router.get("/greet")
         async def greet():
-            return {"message": "Hello from Yanmo plugin!"}
+            return {"message": "Hello from ResearchInk plugin!"}
 
         return router
 

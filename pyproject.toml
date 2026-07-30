@@ -1,5 +1,5 @@
 [project]
-name = "yanmo"
+name = "research-ink"
 version = "1.0.0"
 description = "研墨 · 本地优先的科研助手"
 readme = "README.md"
@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sixtdreanight/Yanmo"
-Repository = "https://github.com/sixtdreanight/Yanmo.git"
-Issues = "https://github.com/sixtdreanight/Yanmo/issues"
+Homepage = "https://github.com/sixtdreanight/ResearchInk"
+Repository = "https://github.com/sixtdreanight/ResearchInk.git"
+Issues = "https://github.com/sixtdreanight/ResearchInk/issues"
 
 [project.optional-dependencies]
 dev = [

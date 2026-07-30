@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/refs/heads/dev/crates/tauri-cli/schema.json",
   "productName": "研墨",
   "version": "1.0.0",
-  "identifier": "com.yanmo.app",
+  "identifier": "com.researchink.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",

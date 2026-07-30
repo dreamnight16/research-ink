@@ -1,12 +1,12 @@
-# Contributing to Yanmo (研墨)
+# Contributing to ResearchInk (研墨)
 
 Thanks for your interest in contributing!
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/sixtdreanight/Yanmo.git
-cd Yanmo
+git clone https://github.com/sixtdreanight/ResearchInk.git
+cd ResearchInk
 pip install -e ".[dev]"
 pytest
 ```
@@ -58,6 +58,6 @@ See [plugin_schema/API.md](plugin_schema/API.md) for the plugin API guide.
 
 ## Questions?
 
-Open a [discussion](https://github.com/sixtdreanight/Yanmo/discussions).
+Open a [discussion](https://github.com/sixtdreanight/ResearchInk/discussions).
 
 [conv]: https://www.conventionalcommits.org/

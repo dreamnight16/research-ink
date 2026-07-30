@@ -1,15 +1,15 @@
 **Language:** [English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja.md)
 
-# Yanmo (研墨)
+# 研墨 (ResearchInk)
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/Yanmo/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/research-ink/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
 
 **A research assistant that runs on your own machine. Your data stays put.**
 
-Unlike general-purpose AI chat, Yanmo is purpose-built for researchers: deconstruct vague advisor directions, track papers across multiple sources, cross-validate formula derivations, evaluate project proposals objectively, and assist with thesis writing. Five purpose-built tools, each with its own interface — not crammed into a single chat box.
+Unlike general-purpose AI chat, ResearchInk is purpose-built for researchers: deconstruct vague advisor directions, track papers across multiple sources, cross-validate formula derivations, evaluate project proposals objectively, and assist with thesis writing. Five purpose-built tools, each with its own interface — not crammed into a single chat box.
 
 Three core principles: **data stays local, formulas must not be wrong, plugin system for extensibility.** Plus AI-powered dedup, research gap finder, and AI-text humanizer.
 
@@ -17,9 +17,9 @@ Desktop application, not a web app. Runs on Windows, Linux, and macOS.
 
 ---
 
-## Why Yanmo?
+## Why ResearchInk?
 
-| | Yanmo | General AI Chat | Research Rabbit | Zotero |
+| | ResearchInk | General AI Chat | Research Rabbit | Zotero |
 |---|---|---|---|---|
 | **Data stays local** | Yes (Ollama) | No | No | Partial |
 | **Formula verification** | Dual-channel (SymPy + basic) | No | No | No |
@@ -46,10 +46,10 @@ Requires Python 3.11+, Node.js 18+, and Ollama.
 **One-shot install:**
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.ps1 | Invoke-Expression
+Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
 ```
 
 **Manual install:**
@@ -75,7 +75,7 @@ docker compose up
 
 ### Desktop App
 
-Download the installer for your platform from [Releases](https://github.com/sixtdreanight/Yanmo/releases):
+Download the installer for your platform from [Releases](https://github.com/sixtdreanight/ResearchInk/releases):
 
 | Platform | Format | Size |
 |----------|--------|------|
@@ -134,7 +134,7 @@ Generates structured outlines with estimated word counts. Supports BibTeX paste-
 
 ## Plugin System
 
-Plugins live in `~/.yanmo/plugins/`. Load them via Settings → Plugin Manager. Minimum requirement: `plugin.toml` + `plugin.py`. See `plugin_schema/API.md` for the development guide. Supports lifecycle management, hot-load/unload, and event bus.
+Plugins live in `~/.research-ink/plugins/`. Load them via Settings → Plugin Manager. Minimum requirement: `plugin.toml` + `plugin.py`. See `plugin_schema/API.md` for the development guide. Supports lifecycle management, hot-load/unload, and event bus.
 
 ---
 
@@ -154,7 +154,7 @@ Default: all operations use local Ollama. Cloud API keys are optional — if you
 
 - Confidential data is forced local; cloud operations are auto-blocked
 - Cloud outbound traffic has audit logs
-- Data stored in `~/.yanmo/`, backup anytime
+- Data stored in `~/.research-ink/`, backup anytime
 
 ## Tech Stack
 

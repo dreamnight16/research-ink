@@ -1,12 +1,12 @@
 [package]
-name = "yanmo"
+name = "research-ink"
 version = "1.0.0"
 description = "研墨 · 本地优先的科研助手"
 authors = ["DreamNight"]
 edition = "2021"
 
 [lib]
-name = "yanmo_lib"
+name = "research-ink_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

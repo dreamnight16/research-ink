@@ -50,7 +50,7 @@ PLATFORM_ARGS = {
     "Darwin": [
         "--windowed",
         "--icon", str(ROOT / "frontend/src-tauri/icons/icon.icns"),
-        "--osx-bundle-identifier", "com.yanmo.app",
+        "--osx-bundle-identifier", "com.researchink.app",
     ],
     "Linux": [
         "--windowed",
