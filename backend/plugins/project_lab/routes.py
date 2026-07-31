@@ -64,7 +64,7 @@ def _uid() -> str:
     return str(uuid.uuid4())
 
 
-def _record_version(
+async def _record_version(
     entity_type: str,
     entity_id: str,
     snapshot: dict,
