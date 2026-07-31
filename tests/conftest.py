@@ -1,5 +1,6 @@
 import tempfile
 import pytest
+from backend.core.schema import ensure_schema
 from backend.core.storage import Storage
 from backend.core.security import SecurityManager
 from backend.core.event_bus import EventBus
@@ -15,6 +16,7 @@ def tmp_data_dir():
 @pytest.fixture
 def storage(tmp_data_dir):
     s = Storage(tmp_data_dir)
+    ensure_schema(s)
     yield s
     s.close()
 

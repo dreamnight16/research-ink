@@ -3,9 +3,9 @@ from backend.core.schema import ensure_schema, SCHEMA_DDL
 
 class TestSchema:
     def test_all_ddl_is_non_empty(self):
-        assert len(SCHEMA_DDL) >= 4
+        assert len(SCHEMA_DDL) >= 5
         for ddl in SCHEMA_DDL:
-            assert "CREATE TABLE" in ddl
+            assert ddl.startswith("CREATE")
 
     def test_ensure_schema_is_idempotent(self, storage):
         ensure_schema(storage)
