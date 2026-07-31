@@ -327,11 +327,25 @@ export function VersionTimeline({
           style={{
             textAlign: "center",
             color: "var(--text-muted)",
-            padding: "48px 0",
+            padding: "64px 0",
             fontSize: 14,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
           }}
         >
-          {"还没有版本记录，编辑内容后自动产生"}
+          <div style={{
+            fontSize: 36,
+            lineHeight: 1,
+            opacity: 0.25,
+            fontFamily: "var(--font-serif)",
+          }}>
+            {"📜"}
+          </div>
+          <div>
+            {"编辑内容后自动产生版本记录，或手动打快照标记重要节点"}
+          </div>
         </div>
       ) : (
         <div style={{ position: "relative" }}>
@@ -357,6 +371,12 @@ export function VersionTimeline({
                   gap: 16,
                   paddingBottom: 16,
                   paddingLeft: 36,
+                  paddingTop: i === 0 ? 12 : 0,
+                  paddingRight: i === 0 ? 16 : 0,
+                  marginLeft: i === 0 ? 4 : 0,
+                  marginRight: i === 0 ? 4 : 0,
+                  background: i === 0 ? "var(--accent-soft)" : "transparent",
+                  borderRadius: i === 0 ? "var(--radius)" : 0,
                 }}
               >
                 {/* Timeline dot */}
@@ -446,7 +466,11 @@ export function VersionTimeline({
                   </span>
                   {i > 0 && (
                     <button
-                      onClick={() => handleRollback(v.id)}
+                      onClick={() => {
+                        if (window.confirm("确定要回滚到此版本吗？当前未保存的更改将丢失。")) {
+                          handleRollback(v.id);
+                        }
+                      }}
                       disabled={rollbackId === v.id}
                       style={{
                         marginLeft: 8,

@@ -168,7 +168,7 @@ export function ProjectList({ projects, onSelect, onRefresh }: Props) {
             style={{
               ...inputBaseStyle,
               width: "100%",
-              paddingLeft: 28,
+              paddingLeft: 10,
               paddingRight: 10,
             }}
           />
@@ -213,13 +213,27 @@ export function ProjectList({ projects, onSelect, onRefresh }: Props) {
           style={{
             textAlign: "center",
             color: "var(--text-muted)",
-            padding: "48px 0",
+            padding: "64px 0",
             fontSize: 14,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
           }}
         >
-          {projects.length === 0
-            ? "还没有项目，点击「新建项目」开始"
-            : "没有匹配的项目"}
+          <div style={{
+            fontSize: 40,
+            lineHeight: 1,
+            opacity: 0.3,
+            fontFamily: "var(--font-serif)",
+          }}>
+            {projects.length === 0 ? "⚗️" : "🔍"}
+          </div>
+          <div>
+            {projects.length === 0
+              ? "还没有项目，点击「新建项目」开始你的研究之旅"
+              : "没有匹配的项目"}
+          </div>
         </div>
       ) : (
         <div

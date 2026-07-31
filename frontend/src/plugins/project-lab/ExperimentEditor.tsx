@@ -215,11 +215,25 @@ export function ExperimentEditor({ project, onUpdate }: Props) {
           style={{
             textAlign: "center",
             color: "var(--text-muted)",
-            padding: "48px 0",
+            padding: "64px 0",
             fontSize: 14,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
           }}
         >
-          {"还没有实验，点击「新建实验」开始记录"}
+          <div style={{
+            fontSize: 36,
+            lineHeight: 1,
+            opacity: 0.25,
+            fontFamily: "var(--font-serif)",
+          }}>
+            {"🧪"}
+          </div>
+          <div>
+            {"点击「新建实验」记录你的每一次尝试与发现"}
+          </div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -355,6 +369,7 @@ export function ExperimentEditor({ project, onUpdate }: Props) {
                         onChange={(e) =>
                           updateExperiment(exp.id, "title", e.target.value)
                         }
+                        placeholder="实验名称"
                         style={inputStyle}
                       />
                     </div>
@@ -376,6 +391,7 @@ export function ExperimentEditor({ project, onUpdate }: Props) {
                           updateExperiment(exp.id, "method", e.target.value)
                         }
                         rows={3}
+                        placeholder="实验方案、使用的方法、工具或流程"
                         style={{ ...textareaStyle, minHeight: 60 }}
                       />
                     </div>
@@ -397,6 +413,7 @@ export function ExperimentEditor({ project, onUpdate }: Props) {
                           updateExperiment(exp.id, "result", e.target.value)
                         }
                         rows={2}
+                        placeholder="实验观察到的现象、数据或输出"
                         style={textareaStyle}
                       />
                     </div>
@@ -422,6 +439,7 @@ export function ExperimentEditor({ project, onUpdate }: Props) {
                           )
                         }
                         rows={2}
+                        placeholder="从结果中得出的结论、分析或下一步计划"
                         style={textareaStyle}
                       />
                     </div>
