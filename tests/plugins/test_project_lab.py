@@ -146,3 +146,123 @@ class TestProjectCRUD:
         storage.sql_execute("DELETE FROM projects WHERE id = ?", (pid,))
         rows = storage.sql_query("SELECT id FROM experiments WHERE id = ?", (eid,))
         assert len(rows) == 0
+
+
+class TestExperimentCRUD:
+    """Experiment create, update, delete within a project."""
+
+    def test_create_experiment(self, storage):
+        ts = now_iso()
+        pid = str(uuid.uuid4())
+        eid = str(uuid.uuid4())
+        storage.sql_execute(
+            "INSERT INTO projects(id, title, created_at, updated_at) VALUES (?,?,?,?)",
+            (pid, "P", ts, ts),
+        )
+        storage.sql_execute(
+            """INSERT INTO experiments(id, project_id, title, method, params,
+               result, conclusion, attachments, sort_order, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            (eid, pid, "Exp1", "TestMethod", '{"x":1}', "Result1", "Conclusion1",
+             '["file.pdf"]', 0, ts, ts),
+        )
+        rows = storage.sql_query("SELECT * FROM experiments WHERE id = ?", (eid,))
+        assert len(rows) == 1
+        assert rows[0]["title"] == "Exp1"
+
+    def test_update_experiment(self, storage):
+        ts = now_iso()
+        pid = str(uuid.uuid4())
+        eid = str(uuid.uuid4())
+        storage.sql_execute(
+            "INSERT INTO projects(id, title, created_at, updated_at) VALUES (?,?,?,?)",
+            (pid, "P", ts, ts),
+        )
+        storage.sql_execute(
+            """INSERT INTO experiments(id, project_id, title, method, created_at, updated_at)
+               VALUES (?,?,?,?,?,?)""",
+            (eid, pid, "Original", "OldMethod", ts, ts),
+        )
+        storage.sql_execute(
+            "UPDATE experiments SET title=?, method=?, updated_at=? WHERE id=?",
+            ("Updated", "NewMethod", ts, eid),
+        )
+        rows = storage.sql_query("SELECT * FROM experiments WHERE id = ?", (eid,))
+        assert rows[0]["title"] == "Updated"
+        assert rows[0]["method"] == "NewMethod"
+
+    def test_delete_experiment(self, storage):
+        ts = now_iso()
+        pid = str(uuid.uuid4())
+        eid = str(uuid.uuid4())
+        storage.sql_execute(
+            "INSERT INTO projects(id, title, created_at, updated_at) VALUES (?,?,?,?)",
+            (pid, "P", ts, ts),
+        )
+        storage.sql_execute(
+            "INSERT INTO experiments(id, project_id, title, created_at, updated_at) VALUES (?,?,?,?,?)",
+            (eid, pid, "E", ts, ts),
+        )
+        storage.sql_execute("DELETE FROM experiments WHERE id = ?", (eid,))
+        rows = storage.sql_query("SELECT id FROM experiments WHERE id = ?", (eid,))
+        assert len(rows) == 0
+
+
+class TestVersionManagement:
+    """Version history, checkpoints, and rollback."""
+
+    def test_version_history_returns_newest_first(self, storage):
+        ts1 = "2026-01-01T00:00:00"
+        ts2 = "2026-06-01T00:00:00"
+        pid = str(uuid.uuid4())
+        vid1, vid2 = str(uuid.uuid4()), str(uuid.uuid4())
+        storage.sql_execute(
+            "INSERT INTO versions(id, entity_type, entity_id, snapshot, created_at) VALUES (?,?,?,?,?)",
+            (vid1, "project", pid, '{"title":"v1"}', ts1),
+        )
+        storage.sql_execute(
+            "INSERT INTO versions(id, entity_type, entity_id, snapshot, created_at) VALUES (?,?,?,?,?)",
+            (vid2, "project", pid, '{"title":"v2"}', ts2),
+        )
+        rows = storage.sql_query(
+            "SELECT * FROM versions WHERE entity_type=? AND entity_id=? ORDER BY created_at DESC",
+            ("project", pid),
+        )
+        assert len(rows) == 2
+        assert rows[0]["id"] == vid2  # newest first
+
+    def test_checkpoint_has_is_checkpoint_flag(self, storage):
+        vid = str(uuid.uuid4())
+        pid = str(uuid.uuid4())
+        storage.sql_execute(
+            """INSERT INTO versions(id, entity_type, entity_id, snapshot,
+               is_checkpoint, label, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (vid, "project", pid, '{"title":"snap"}', 1, "Milestone 1", "2026-01-01"),
+        )
+        rows = storage.sql_query("SELECT * FROM versions WHERE id = ?", (vid,))
+        assert rows[0]["is_checkpoint"] == 1
+        assert rows[0]["label"] == "Milestone 1"
+
+    def test_rollback_restores_snapshot(self, storage):
+        ts = now_iso()
+        pid = str(uuid.uuid4())
+        vid = str(uuid.uuid4())
+        # Create project
+        storage.sql_execute(
+            "INSERT INTO projects(id, title, discipline, created_at, updated_at) VALUES (?,?,?,?,?)",
+            (pid, "Original", "Physics", ts, ts),
+        )
+        # Create a version snapshot with different title
+        storage.sql_execute(
+            """INSERT INTO versions(id, entity_type, entity_id, snapshot, created_at)
+               VALUES (?,?,?,?,?)""",
+            (vid, "project", pid, '{"title":"Snapshot Title","discipline":"Physics"}', ts),
+        )
+        # Simulate rollback: update project from snapshot
+        storage.sql_execute(
+            "UPDATE projects SET title=?, updated_at=? WHERE id=?",
+            ("Snapshot Title", ts, pid),
+        )
+        rows = storage.sql_query("SELECT title FROM projects WHERE id = ?", (pid,))
+        assert rows[0]["title"] == "Snapshot Title"

@@ -304,3 +304,301 @@ async def delete_project(project_id: str, request: Request):
     storage.sql_execute("DELETE FROM projects WHERE id = ?", (project_id,))
     await bus.emit("project.deleted", {"id": project_id})
     return {"success": True, "data": None}
+
+
+# ── Experiment Endpoints ─────────────────────────────────
+
+@router.post("/projects/{project_id}/experiments")
+async def create_experiment(project_id: str, body: ExperimentCreate, request: Request):
+    """Create an experiment under a project. Records initial version."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    rows = storage.sql_query("SELECT id FROM projects WHERE id = ?", (project_id,))
+    if not rows:
+        raise HTTPException(404, "Project not found")
+
+    eid = _uid()
+    ts = _now()
+    params_json = json.dumps(body.params, ensure_ascii=False)
+    attachments_json = json.dumps(body.attachments, ensure_ascii=False)
+
+    order_rows = storage.sql_query(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order "
+        "FROM experiments WHERE project_id = ?",
+        (project_id,),
+    )
+    next_order = order_rows[0]["next_order"]
+
+    storage.sql_execute(
+        """INSERT INTO experiments (id, project_id, title, method, params,
+           result, conclusion, attachments, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (eid, project_id, body.title, body.method, params_json,
+         body.result, body.conclusion, attachments_json, next_order, ts, ts),
+    )
+
+    experiment = _experiment_row_to_dict(
+        storage.sql_query("SELECT * FROM experiments WHERE id = ?", (eid,))[0]
+    )
+    await _record_version(
+        "experiment", eid, experiment,
+        change_summary="Initial version",
+        storage=storage, bus=bus,
+    )
+    await bus.emit("experiment.created", experiment)
+    return {"success": True, "data": experiment}
+
+
+@router.get("/projects/{project_id}/experiments")
+async def list_experiments(project_id: str, request: Request):
+    """List all experiments for a project."""
+    storage = request.app.state.storage
+    rows = storage.sql_query(
+        "SELECT * FROM experiments WHERE project_id = ? ORDER BY sort_order ASC",
+        (project_id,),
+    )
+    return {"success": True, "data": [_experiment_row_to_dict(r) for r in rows]}
+
+
+@router.put("/projects/{project_id}/experiments/{experiment_id}")
+async def update_experiment(
+    project_id: str, experiment_id: str, body: ExperimentUpdate, request: Request,
+):
+    """Update experiment fields. Records a version."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    rows = storage.sql_query("SELECT * FROM experiments WHERE id = ?", (experiment_id,))
+    if not rows:
+        raise HTTPException(404, "Experiment not found")
+
+    current = _experiment_row_to_dict(rows[0])
+    updates: dict[str, object] = {}
+    changed: list[str] = []
+
+    field_map = {
+        "title": ("title", lambda v: v),
+        "method": ("method", lambda v: v),
+        "params": ("params", lambda v: json.dumps(v, ensure_ascii=False)),
+        "result": ("result", lambda v: v),
+        "conclusion": ("conclusion", lambda v: v),
+        "attachments": ("attachments", lambda v: json.dumps(v, ensure_ascii=False)),
+    }
+
+    for field, (col, transform) in field_map.items():
+        new_val = getattr(body, field)
+        if new_val is not None:
+            transformed = transform(new_val)
+            current_val = current[field]
+            if isinstance(current_val, (dict, list)):
+                current_val = json.dumps(current_val, ensure_ascii=False)
+            if transformed != current_val:
+                updates[col] = transformed
+                changed.append(field)
+
+    if not updates:
+        return {"success": True, "data": current}
+
+    updates["updated_at"] = _now()
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values: list[object] = list(updates.values()) + [experiment_id]
+
+    storage.sql_execute(
+        f"UPDATE experiments SET {set_clause} WHERE id = ?", tuple(values),
+    )
+
+    updated = _experiment_row_to_dict(
+        storage.sql_query("SELECT * FROM experiments WHERE id = ?", (experiment_id,))[0]
+    )
+    await _record_version(
+        "experiment", experiment_id, updated,
+        change_summary=f"Updated {', '.join(changed)}",
+        storage=storage, bus=bus,
+    )
+    await bus.emit("experiment.updated", updated)
+    return {"success": True, "data": updated}
+
+
+@router.patch("/projects/{project_id}/experiments/{experiment_id}/status")
+async def update_experiment_status(
+    project_id: str, experiment_id: str, body: StatusUpdate, request: Request,
+):
+    """Quick experiment status change. Records a version."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    rows = storage.sql_query("SELECT id FROM experiments WHERE id = ?", (experiment_id,))
+    if not rows:
+        raise HTTPException(404, "Experiment not found")
+
+    ts = _now()
+    storage.sql_execute(
+        "UPDATE experiments SET status = ?, updated_at = ? WHERE id = ?",
+        (body.status, ts, experiment_id),
+    )
+    updated = _experiment_row_to_dict(
+        storage.sql_query("SELECT * FROM experiments WHERE id = ?", (experiment_id,))[0]
+    )
+    await _record_version(
+        "experiment", experiment_id, updated,
+        change_summary=f"Status → {body.status}",
+        storage=storage, bus=bus,
+    )
+    await bus.emit("experiment.updated", updated)
+    return {"success": True, "data": updated}
+
+
+@router.delete("/projects/{project_id}/experiments/{experiment_id}")
+async def delete_experiment(project_id: str, experiment_id: str, request: Request):
+    """Delete an experiment and its versions."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    rows = storage.sql_query("SELECT id FROM experiments WHERE id = ?", (experiment_id,))
+    if not rows:
+        raise HTTPException(404, "Experiment not found")
+
+    storage.sql_execute(
+        "DELETE FROM versions WHERE entity_type='experiment' AND entity_id = ?",
+        (experiment_id,),
+    )
+    storage.sql_execute("DELETE FROM experiments WHERE id = ?", (experiment_id,))
+    await bus.emit("experiment.deleted", {"id": experiment_id, "project_id": project_id})
+    return {"success": True, "data": None}
+
+
+# ── Version Endpoints ────────────────────────────────────
+
+@router.get("/versions")
+async def list_versions(
+    request: Request,
+    entity_type: str = Query(..., pattern=r"^(project|experiment)$"),
+    entity_id: str = Query(...),
+):
+    """Get version history for an entity (newest first)."""
+    storage = request.app.state.storage
+    rows = storage.sql_query(
+        """SELECT id, entity_type, entity_id, snapshot, change_summary,
+           is_checkpoint, label, created_at
+           FROM versions
+           WHERE entity_type = ? AND entity_id = ?
+           ORDER BY created_at DESC""",
+        (entity_type, entity_id),
+    )
+    versions = []
+    for r in rows:
+        versions.append({
+            "id": r["id"],
+            "entity_type": r["entity_type"],
+            "entity_id": r["entity_id"],
+            "snapshot": json.loads(r["snapshot"]) if r["snapshot"] else {},
+            "change_summary": r["change_summary"],
+            "is_checkpoint": bool(r["is_checkpoint"]),
+            "label": r["label"],
+            "created_at": r["created_at"],
+        })
+    return {"success": True, "data": versions}
+
+
+@router.post("/versions")
+async def create_checkpoint(body: CheckpointCreate, request: Request):
+    """Create a manual checkpoint (snapshot) for a project or experiment."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    table = body.entity_type + "s"  # "projects" or "experiments"
+    rows = storage.sql_query(f"SELECT * FROM {table} WHERE id = ?", (body.entity_id,))
+    if not rows:
+        raise HTTPException(404, f"{body.entity_type.capitalize()} not found")
+
+    converter = _project_row_to_dict if body.entity_type == "project" else _experiment_row_to_dict
+    entity = converter(rows[0])
+
+    vid = await _record_version(
+        body.entity_type, body.entity_id, entity,
+        is_checkpoint=True, label=body.label,
+        change_summary=f"Checkpoint: {body.label}",
+        storage=storage, bus=bus,
+    )
+    return {"success": True, "data": {"id": vid, "label": body.label}}
+
+
+@router.get("/versions/{version_id}")
+async def get_version(version_id: str, request: Request):
+    """Get a specific version's full snapshot."""
+    storage = request.app.state.storage
+    rows = storage.sql_query(
+        "SELECT * FROM versions WHERE id = ?", (version_id,),
+    )
+    if not rows:
+        raise HTTPException(404, "Version not found")
+
+    r = rows[0]
+    return {
+        "success": True,
+        "data": {
+            "id": r["id"],
+            "entity_type": r["entity_type"],
+            "entity_id": r["entity_id"],
+            "snapshot": json.loads(r["snapshot"]) if r["snapshot"] else {},
+            "change_summary": r["change_summary"],
+            "is_checkpoint": bool(r["is_checkpoint"]),
+            "label": r["label"],
+            "created_at": r["created_at"],
+        },
+    }
+
+
+@router.post("/versions/{version_id}/rollback")
+async def rollback_version(version_id: str, request: Request):
+    """Rollback an entity to a specific version. Creates a new version recording the rollback."""
+    storage = request.app.state.storage
+    bus = request.app.state.bus
+
+    rows = storage.sql_query(
+        "SELECT * FROM versions WHERE id = ?", (version_id,),
+    )
+    if not rows:
+        raise HTTPException(404, "Version not found")
+
+    r = rows[0]
+    entity_type = r["entity_type"]
+    entity_id = r["entity_id"]
+    snapshot = json.loads(r["snapshot"])
+
+    table = entity_type + "s"
+    ts = _now()
+
+    if entity_type == "project":
+        storage.sql_execute(
+            """UPDATE projects SET title=?, discipline=?, description=?,
+               tags=?, updated_at=? WHERE id=?""",
+            (snapshot["title"], snapshot.get("discipline", ""),
+             snapshot.get("description", ""),
+             json.dumps(snapshot.get("tags", []), ensure_ascii=False),
+             ts, entity_id),
+        )
+    else:
+        storage.sql_execute(
+            """UPDATE experiments SET title=?, method=?, params=?,
+               result=?, conclusion=?, attachments=?, updated_at=? WHERE id=?""",
+            (snapshot["title"], snapshot.get("method", ""),
+             json.dumps(snapshot.get("params", {}), ensure_ascii=False),
+             snapshot.get("result", ""), snapshot.get("conclusion", ""),
+             json.dumps(snapshot.get("attachments", []), ensure_ascii=False),
+             ts, entity_id),
+        )
+
+    rollback_label = r["label"] if r["label"] else version_id[:8]
+    await _record_version(
+        entity_type, entity_id, snapshot,
+        change_summary=f"Rolled back to {rollback_label}",
+        is_checkpoint=False,
+        storage=storage, bus=bus,
+    )
+    await bus.emit("version.rollback", {
+        "entity_type": entity_type, "entity_id": entity_id,
+        "version_id": version_id,
+    })
+    return {"success": True, "data": {"message": f"Rolled back to {rollback_label}"}}
