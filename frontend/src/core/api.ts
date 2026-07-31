@@ -41,6 +41,24 @@ export const api = {
       body: JSON.stringify({ collection, query, n }),
     }),
 
+  // Generic HTTP helpers
+  get: <T>(path: string) => request<T>(path),
+
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  del: (path: string) =>
+    request<{ success: boolean }>(path, { method: 'DELETE' }),
+
   // Project Lab
   projectLab: {
     listProjects: () =>
@@ -54,5 +72,50 @@ export const api = {
 
     getProject: (id: string) =>
       request<{ success: boolean; data: unknown }>(`/project-lab/projects/${id}`),
+
+    createExperiment: (projectId: string, data: Record<string, unknown>) =>
+      request<{ success: boolean; data: unknown }>(
+        `/project-lab/projects/${projectId}/experiments`,
+        { method: 'POST', body: JSON.stringify(data) },
+      ),
+
+    updateExperiment: (
+      projectId: string,
+      experimentId: string,
+      data: Record<string, unknown>,
+    ) =>
+      request<{ success: boolean; data: unknown }>(
+        `/project-lab/projects/${projectId}/experiments/${experimentId}`,
+        { method: 'PUT', body: JSON.stringify(data) },
+      ),
+
+    deleteExperiment: (projectId: string, experimentId: string) =>
+      request<{ success: boolean }>(
+        `/project-lab/projects/${projectId}/experiments/${experimentId}`,
+        { method: 'DELETE' },
+      ),
+
+    listVersions: (entityType: string, entityId: string) =>
+      request<{ success: boolean; data: unknown[] }>(
+        `/project-lab/versions?entity_type=${encodeURIComponent(
+          entityType,
+        )}&entity_id=${encodeURIComponent(entityId)}`,
+      ),
+
+    createCheckpoint: (data: {
+      entity_type: string;
+      entity_id: string;
+      label: string;
+    }) =>
+      request<{ success: boolean; data: unknown }>('/project-lab/versions', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    rollbackVersion: (versionId: string) =>
+      request<{ success: boolean; data: unknown }>(
+        `/project-lab/versions/${versionId}/rollback`,
+        { method: 'POST' },
+      ),
   },
 };
