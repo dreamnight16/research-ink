@@ -1,0 +1,8 @@
+[plugin]
+name = "project-lab"
+version = "1.0.0"
+description = "跨学科项目与实验版本管理 · Git-like 时间线"
+author = "ResearchInk"
+builtin = true
+
+[dependencies]
