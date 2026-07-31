@@ -11,6 +11,7 @@ const TABS = [
   { key: 'evaluator', label: '审项目' },
   { key: 'formula', label: '验公式' },
   { key: 'paper-writer', label: '写论文' },
+  { key: 'project-lab', label: '项目实验室' },
 ];
 
 const EMOJIS = ['☕', '', '', '', '', ''];

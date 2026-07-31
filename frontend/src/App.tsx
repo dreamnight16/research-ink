@@ -6,6 +6,7 @@ import { LiteraturePanel } from './plugins/literature/LiteraturePanel';
 import { EvaluatorPanel } from './plugins/evaluator/EvaluatorPanel';
 import { FormulaPanel } from './plugins/formula/FormulaPanel';
 import { PaperWriterPanel } from './plugins/paper-writer/PaperWriterPanel';
+import { ProjectLabPanel } from './plugins/project-lab/ProjectLabPanel';
 
 export const App: React.FC = () => {
   useEffect(() => {
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
     registerPlugin({ name: 'evaluator', displayName: '审项目', component: EvaluatorPanel, icon: 'check' });
     registerPlugin({ name: 'formula', displayName: '验公式', component: FormulaPanel, icon: 'function' });
     registerPlugin({ name: 'paper-writer', displayName: '写论文', component: PaperWriterPanel, icon: 'edit' });
+    registerPlugin({ name: 'project-lab', displayName: '项目实验室', component: ProjectLabPanel, icon: 'flask' });
   }, []);
 
   return <Workbench />;

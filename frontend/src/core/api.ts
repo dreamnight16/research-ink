@@ -40,4 +40,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ collection, query, n }),
     }),
+
+  // Project Lab
+  projectLab: {
+    listProjects: () =>
+      request<{ success: boolean; data: unknown[] }>('/project-lab/projects'),
+
+    createProject: (data: { title: string }) =>
+      request<{ success: boolean; data: unknown }>('/project-lab/projects', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getProject: (id: string) =>
+      request<{ success: boolean; data: unknown }>(`/project-lab/projects/${id}`),
+  },
 };
