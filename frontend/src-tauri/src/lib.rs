@@ -28,14 +28,14 @@ fn find_python() -> &'static str {
 fn start_backend() -> Option<Child> {
     if let Ok(child) = Command::new(find_python())
         .args(["-m", "backend.main"])
-        .env("YANMO_HOST", "0.0.0.0")
+        .env("YANMO_HOST", "127.0.0.1")
         .spawn()
     {
         return Some(child);
     }
     if let Ok(child) = Command::new("python")
         .args(["-m", "backend.main"])
-        .env("YANMO_HOST", "0.0.0.0")
+        .env("YANMO_HOST", "127.0.0.1")
         .spawn()
     {
         return Some(child);

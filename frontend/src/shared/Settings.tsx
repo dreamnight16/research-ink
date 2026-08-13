@@ -37,7 +37,7 @@ export const Settings: React.FC = () => {
     fetch('http://127.0.0.1:8000/api/settings')
       .then((r) => r.json())
       .then((d) => setSettings(d))
-      .catch(() => {});
+      .catch((err) => console.error('Failed to load settings:', err));
   }, []);
 
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -47,7 +47,9 @@ export const Settings: React.FC = () => {
       const res = await fetch('http://127.0.0.1:8000/api/plugins/available');
       const data = await res.json();
       setPlugins(data.plugins || []);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to load plugins:', err);
+    }
   };
 
   useEffect(() => {

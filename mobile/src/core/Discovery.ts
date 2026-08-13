@@ -80,6 +80,11 @@ function generateLanIPs(): string[] {
 
 /**
  * 保存已配对的桌面地址到 localStorage。
+ *
+ * 安全注意：`token` 是 Bearer 凭据，此处以明文写入 localStorage（WebView 存储）。
+ * 在已 root 的设备上，或 WebView 存储被窃取时，令牌可能被读取并用于冒充配对设备。
+ * 后续应迁移到安全存储（如 @capacitor/preferences 的加密后端，或原生 Keystore/Keychain）。
+ * 未配对/清除时请调用 {@link clearDesktopAddress} 一并移除令牌。
  */
 export function saveDesktopAddress(ip: string, token: string): void {
   localStorage.setItem('yanmo-desktop-ip', ip);

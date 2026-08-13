@@ -12,7 +12,8 @@ def main():
     data_dir = str(Path.home() / ".research-ink")
     config = Config.load(data_dir)
     app = create_app(config)
-    host = os.environ.get("YANMO_HOST", "0.0.0.0")
+    # Default to loopback; set YANMO_HOST=0.0.0.0 only to enable LAN pairing.
+    host = os.environ.get("YANMO_HOST", "127.0.0.1")
     port = int(os.environ.get("YANMO_PORT", "8000"))
     uvicorn.run(app, host=host, port=port)
 
