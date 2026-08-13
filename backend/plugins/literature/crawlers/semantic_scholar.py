@@ -24,9 +24,8 @@ class SemanticScholarCrawler(BaseCrawler):
     ]
 
     def build_url(self, query: str, max_results: int) -> str | None:
-        params = f"query={quote_plus(query)}&limit={max_results}&fields={','.join(
-            self.FIELDS
-        )}"
+        fields = ",".join(self.FIELDS)
+        params = f"query={quote_plus(query)}&limit={max_results}&fields={fields}"
         return f"{self.BASE}?{params}"
 
     async def search(self, query: str, max_results: int = 10) -> CrawlerResult:
