@@ -2,7 +2,7 @@
 
 # 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,7 +36,7 @@ npm run dev
 
 ### デスクトップアプリケーション
 
-[Releases](https://github.com/sixtdreanight/ResearchInk/releases) からインストーラーをダウンロード：
+[Releases](https://github.com/dreamnight16/ResearchInk/releases) からインストーラーをダウンロード：
 
 | プラットフォーム | 形式 | サイズ |
 |------|------|------|
@@ -127,7 +127,7 @@ Tauri シェルで React フロントエンドをパッケージ化、Python バ
 
 ## 関連プロジェクト
 
-- [myBlog](https://github.com/sixtdreanight/myBlog) — 作者のブログ、研究に関する記事
+- [myBlog](https://github.com/dreamnight16/myBlog) — 作者のブログ、研究に関する記事
 
 ## License
 

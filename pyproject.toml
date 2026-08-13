@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sixtdreanight/ResearchInk"
-Repository = "https://github.com/sixtdreanight/ResearchInk.git"
-Issues = "https://github.com/sixtdreanight/ResearchInk/issues"
+Homepage = "https://github.com/dreamnight16/ResearchInk"
+Repository = "https://github.com/dreamnight16/ResearchInk.git"
+Issues = "https://github.com/dreamnight16/ResearchInk/issues"
 
 [project.optional-dependencies]
 dev = [

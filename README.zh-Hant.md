@@ -2,7 +2,7 @@
 
 # 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,7 +36,7 @@ npm run dev
 
 ### 桌面應用程式
 
-從 [Releases](https://github.com/sixtdreanight/ResearchInk/releases) 下載安裝包：
+從 [Releases](https://github.com/dreamnight16/ResearchInk/releases) 下載安裝包：
 
 | 平台 | 格式 | 大小 |
 |------|------|------|
@@ -127,7 +127,7 @@ npm run dev
 
 ## 相關專案
 
-- [myBlog](https://github.com/sixtdreanight/myBlog) — 作者部落格，更多科研相關文章
+- [myBlog](https://github.com/dreamnight16/myBlog) — 作者部落格，更多科研相關文章
 
 ## License
 

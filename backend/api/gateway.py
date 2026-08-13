@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import secrets
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -31,6 +32,8 @@ from backend.core.security import Classification, SecurityManager
 from backend.core.storage import Storage
 
 logger = logging.getLogger(__name__)
+
+_PAIR_CODE_TTL_SECONDS = 300
 
 
 class ChatRequest(BaseModel):
@@ -274,15 +277,30 @@ def create_app(config: Config) -> FastAPI:
         logger.info("API auth token rotated")
         return {"token": new_token}
 
+    @app.post("/api/auth/pair/generate")
+    async def generate_pair_code(request: Request):
+        """生成 6 位配对码并存储到 app.state（带过期时间）。"""
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        request.app.state.pair_code = code
+        request.app.state.pair_code_expires = time.monotonic() + _PAIR_CODE_TTL_SECONDS
+        logger.info("Pairing code generated")
+        return {"code": code}
+
     @app.post("/api/auth/pair")
     async def pair_device(request: Request):
         """移动端配对：用 6 位配对码交换 API token。"""
         body = await request.json()
-        pair_code = body.get("code", "")
+        pair_code = str(body.get("code", ""))
         expected = getattr(request.app.state, "pair_code", None)
-        if expected is None or pair_code != expected:
+        expires = getattr(request.app.state, "pair_code_expires", 0.0)
+        if (
+            expected is None
+            or expires < time.monotonic()
+            or not secrets.compare_digest(pair_code, str(expected))
+        ):
             raise HTTPException(status_code=403, detail="Invalid pair code")
         request.app.state.pair_code = None  # 一次性使用
+        request.app.state.pair_code_expires = 0.0
         return {"token": request.app.state.auth_token, "host": request.client.host}
 
     @app.get("/api/plugins")

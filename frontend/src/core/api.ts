@@ -3,10 +3,34 @@ import type { ChatMessage, Classification } from './types';
 const BACKEND = 'http://127.0.0.1:8000';
 const BASE = `${BACKEND}/api`;
 
+let apiToken: string | null = null;
+
+/**
+ * Fetch (and cache) the local API auth token. `/api/auth/token` is the only
+ * authenticated endpoint that is exempt from the auth middleware, so it is
+ * fetched with a raw fetch and no Authorization header.
+ */
+export async function get_api_token(): Promise<string> {
+  if (apiToken) return apiToken;
+  const res = await fetch(`${BASE}/auth/token`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`${res.status}: ${err}`);
+  }
+  const data: { token: string } = await res.json();
+  apiToken = data.token;
+  return apiToken;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await get_api_token();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(options?.headers ?? {}),
+    },
   });
   if (!res.ok) {
     const err = await res.text();

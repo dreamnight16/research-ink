@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 研墨 (Yanmo) — one-shot install script
-# curl -fsSL https://raw.githubusercontent.com/sixtdreanight/Yanmo/master/scripts/install.sh | bash
+# curl -fsSL https://raw.githubusercontent.com/dreamnight16/Yanmo/master/scripts/install.sh | bash
 set -euo pipefail
 
 echo "=== 研墨 Yanmo Installer ==="

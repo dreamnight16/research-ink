@@ -2,7 +2,7 @@
 
 # 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/ResearchInk/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/ResearchInk/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -22,10 +22,10 @@
 **一键安装：**
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
+Invoke-WebRequest https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
 ```
 
 **手动安装：**
@@ -51,7 +51,7 @@ docker compose up
 
 ### 桌面应用
 
-从 [Releases](https://github.com/sixtdreanight/ResearchInk/releases) 下载安装包：
+从 [Releases](https://github.com/dreamnight16/ResearchInk/releases) 下载安装包：
 
 | 平台 | 格式 | 大小 |
 |------|------|------|
@@ -143,7 +143,7 @@ docker compose up
 
 ## 相关项目
 
-- [myBlog](https://github.com/sixtdreanight/myBlog) — 作者博客，更多科研相关文章
+- [myBlog](https://github.com/dreamnight16/myBlog) — 作者博客，更多科研相关文章
 
 ## License
 

@@ -29,5 +29,5 @@ modules:
       - install -Dm644 distribution/com.yanmo.app.desktop /app/share/applications/com.yanmo.app.desktop
     sources:
       - type: git
-        url: https://github.com/sixtdreanight/Yanmo.git
+        url: https://github.com/dreamnight16/Yanmo.git
         tag: v0.1.0

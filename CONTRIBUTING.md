@@ -5,7 +5,7 @@ Thanks for your interest in contributing!
 ## Getting Started
 
 ```bash
-git clone https://github.com/sixtdreanight/ResearchInk.git
+git clone https://github.com/dreamnight16/ResearchInk.git
 cd ResearchInk
 pip install -e ".[dev]"
 pytest
@@ -58,6 +58,6 @@ See [plugin_schema/API.md](plugin_schema/API.md) for the plugin API guide.
 
 ## Questions?
 
-Open a [discussion](https://github.com/sixtdreanight/ResearchInk/discussions).
+Open a [discussion](https://github.com/dreamnight16/ResearchInk/discussions).
 
 [conv]: https://www.conventionalcommits.org/

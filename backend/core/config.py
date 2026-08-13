@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -7,6 +8,16 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _KEYRING_SERVICE = "com.researchink.research-assistant"
+
+# Documented environment variables that take precedence over config.json/keyring.
+_ENV_OVERRIDES = {
+    "OLLAMA_BASE_URL": "ollama_base_url",
+    "OLLAMA_MODEL": "ollama_model",
+    "CLOUD_PROVIDER": "cloud_provider",
+    "CLOUD_API_KEY": "cloud_api_key",
+    "CLOUD_MODEL": "cloud_model",
+}
+_ENV_DATA_DIR = "YANMO_DATA_DIR"
 
 
 def _load_cloud_api_key() -> str:
@@ -37,6 +48,24 @@ def _save_cloud_api_key(key: str) -> None:
         logger.warning("keyring 存储失败: %s", e)
 
 
+def _apply_env_overrides(cfg: "Config") -> None:
+    """Apply documented environment variables on top of a loaded config."""
+    for env_name, field_name in _ENV_OVERRIDES.items():
+        value = os.environ.get(env_name)
+        if value:
+            setattr(cfg, field_name, value)
+
+
+def _validate_config(cfg: "Config") -> None:
+    """Log warnings when required configuration is missing or inconsistent."""
+    if not cfg.ollama_base_url:
+        logger.warning("ollama_base_url is empty; local model requests will fail")
+    if cfg.cloud_provider and not cfg.cloud_api_key:
+        logger.warning(
+            "cloud_provider '%s' is set but cloud_api_key is missing", cfg.cloud_provider
+        )
+
+
 @dataclass
 class Config:
     llm_provider: str = "ollama"
@@ -53,6 +82,9 @@ class Config:
 
     @classmethod
     def load(cls, data_dir: str) -> "Config":
+        env_data_dir = os.environ.get(_ENV_DATA_DIR)
+        if env_data_dir:
+            data_dir = os.path.expanduser(env_data_dir)
         config_path = Path(data_dir) / "config.json"
         if config_path.exists():
             try:
@@ -81,9 +113,11 @@ class Config:
                     _save_cloud_api_key(cfg.cloud_api_key)
                     cfg.cloud_api_key = ""
                     cfg.save()
-                return cfg
-        cfg = cls()
+        else:
+            cfg = cls()
         cfg.data_dir = data_dir
+        _apply_env_overrides(cfg)
+        _validate_config(cfg)
         return cfg
 
     def save(self) -> None:

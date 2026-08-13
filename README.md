@@ -2,7 +2,7 @@
 
 # 研墨 (ResearchInk)
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/sixtdreanight/research-ink/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/research-ink/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -46,10 +46,10 @@ Requires Python 3.11+, Node.js 18+, and Ollama.
 **One-shot install:**
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-Invoke-WebRequest https://raw.githubusercontent.com/sixtdreanight/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
+Invoke-WebRequest https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
 ```
 
 **Manual install:**
@@ -75,7 +75,7 @@ docker compose up
 
 ### Desktop App
 
-Download the installer for your platform from [Releases](https://github.com/sixtdreanight/ResearchInk/releases):
+Download the installer for your platform from [Releases](https://github.com/dreamnight16/ResearchInk/releases):
 
 | Platform | Format | Size |
 |----------|--------|------|
@@ -167,7 +167,7 @@ Default: all operations use local Ollama. Cloud API keys are optional — if you
 
 ## Related
 
-- [myBlog](https://github.com/sixtdreanight/myBlog) — Author's blog, more research-related articles
+- [myBlog](https://github.com/dreamnight16/myBlog) — Author's blog, more research-related articles
 
 ## License
 

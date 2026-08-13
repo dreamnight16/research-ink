@@ -30,7 +30,7 @@ _ws_connection_count = 0
 
 
 def auth_skip_paths() -> set[str]:
-    return {"/api/health", "/docs", "/openapi.json", "/api/auth/token"}
+    return {"/api/health", "/docs", "/openapi.json", "/api/auth/token", "/api/auth/pair"}
 
 
 async def rate_limit_middleware(request: Request, call_next):

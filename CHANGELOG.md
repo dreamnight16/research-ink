@@ -85,4 +85,4 @@
 - Chat history persisted to localStorage
 - Settings save confirmation toast
 
-[0.1.1]: https://github.com/sixtdreanight/ResearchInk/releases/tag/v0.1.1
+[0.1.1]: https://github.com/dreamnight16/ResearchInk/releases/tag/v0.1.1

@@ -47,23 +47,26 @@ jobs:
           releaseBody: "See CHANGELOG.md for details."
           releaseDraft: true
 
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: cd mobile && npm ci
-      - name: Build web assets
-        run: cd mobile && npm run build
-      - name: Sync Capacitor
-        run: cd mobile && npx cap sync android
-      - name: Build APK
-        run: cd mobile/android && ./gradlew assembleDebug
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: yanmo-android-debug
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+  # build-android is disabled: the mobile/ directory is a stub with no
+  # lockfile, tsconfig, vite config, or android/ project, so `npm ci` and
+  # `npm run build` cannot succeed. Re-enable once the mobile app is implemented.
+  # build-android:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+  #     - name: Install dependencies
+  #       run: cd mobile && npm ci
+  #     - name: Build web assets
+  #       run: cd mobile && npm run build
+  #     - name: Sync Capacitor
+  #       run: cd mobile && npx cap sync android
+  #     - name: Build APK
+  #       run: cd mobile/android && ./gradlew assembleDebug
+  #     - name: Upload APK
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: yanmo-android-debug
+  #         path: mobile/android/app/build/outputs/apk/debug/app-debug.apk

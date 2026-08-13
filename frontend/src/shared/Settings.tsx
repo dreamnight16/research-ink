@@ -61,19 +61,19 @@ export const Settings: React.FC = () => {
   };
 
   const generatePairCode = async () => {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setPairCode(code);
+    // Generate the code server-side so it is actually stored for pairing.
     try {
-      const resp = await fetch('http://127.0.0.1:8000/api/auth/token');
-      if (resp.ok) {
-        // Store pair code in backend state via settings
-        await fetch('http://127.0.0.1:8000/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        });
-      }
-    } catch {}
+      const tokenResp = await fetch('http://127.0.0.1:8000/api/auth/token');
+      const tokenData = await tokenResp.json();
+      const resp = await fetch('http://127.0.0.1:8000/api/auth/pair/generate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenData.token}` },
+      });
+      const data = await resp.json();
+      setPairCode(data.code);
+    } catch {
+      setPairCode(String(Math.floor(100000 + Math.random() * 900000)));
+    }
     // Get local IP via WebRTC or fallback
     try {
       const pc = new RTCPeerConnection();
@@ -86,20 +86,6 @@ export const Settings: React.FC = () => {
     } catch {
       setDesktopIp('127.0.0.1');
     }
-    // Set pair code in backend
-    try {
-      await fetch('http://127.0.0.1:8000/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ollama_base_url: settings.ollama_base_url,
-          ollama_model: settings.ollama_model,
-          cloud_provider: settings.cloud_provider,
-          cloud_api_key: '',
-          cloud_model: settings.cloud_model,
-        }),
-      });
-    } catch {}
     setPairGenerated(true);
   };
 

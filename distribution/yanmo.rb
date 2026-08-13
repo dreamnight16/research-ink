@@ -1,11 +1,11 @@
 # Homebrew formula for 研墨 (YanMo)
-# brew tap sixtdreanight/yanmo
+# brew tap dreamnight16/yanmo
 # brew install yanmo
 
 class Yanmo < Formula
   desc "Local-first AI research assistant for academia"
-  homepage "https://github.com/sixtdreanight/Yanmo"
-  url "https://github.com/sixtdreanight/Yanmo/archive/refs/tags/v0.1.0.tar.gz"
+  homepage "https://github.com/dreamnight16/Yanmo"
+  url "https://github.com/dreamnight16/Yanmo/archive/refs/tags/v0.1.0.tar.gz"
   sha256 "PLACEHOLDER"
   license "MIT"
 
