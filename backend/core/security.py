@@ -1,12 +1,12 @@
 from collections import deque
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from backend.core.storage import Storage
 
 
-class Classification(str, Enum):
+class Classification(StrEnum):
     SECRET = "secret"
     CAUTIOUS = "cautious"
     PUBLIC = "public"

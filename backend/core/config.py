@@ -34,18 +34,20 @@ def _load_cloud_api_key() -> str:
     return ""
 
 
-def _save_cloud_api_key(key: str) -> None:
-    """将 cloud_api_key 存储到系统 keyring。"""
+def _save_cloud_api_key(key: str) -> bool:
+    """将 cloud_api_key 存储到系统 keyring，返回是否成功。"""
     if not key:
-        return
+        return False
     try:
         import keyring
         keyring.set_password(_KEYRING_SERVICE, "cloud_api_key", key)
         logger.info("cloud_api_key 已存储到系统 keyring")
+        return True
     except ImportError:
-        pass
+        return False
     except Exception as e:
         logger.warning("keyring 存储失败: %s", e)
+        return False
 
 
 def _apply_env_overrides(cfg: "Config") -> None:
@@ -107,10 +109,9 @@ class Config:
                 keyring_key = _load_cloud_api_key()
                 if keyring_key:
                     cfg.cloud_api_key = keyring_key
-                elif cfg.cloud_api_key:
-                    # 从旧 config.json 迁移到 keyring
+                elif cfg.cloud_api_key and _save_cloud_api_key(cfg.cloud_api_key):
+                    # 仅当成功迁移到 keyring 后才清除 config.json 中的明文
                     logger.info("正在将 cloud_api_key 从 config.json 迁移到系统 keyring...")
-                    _save_cloud_api_key(cfg.cloud_api_key)
                     cfg.cloud_api_key = ""
                     cfg.save()
         else:
@@ -123,13 +124,17 @@ class Config:
     def save(self) -> None:
         path = Path(self.data_dir)
         path.mkdir(parents=True, exist_ok=True)
-        # 尝试将 API 密钥存储到 keyring
-        if self.cloud_api_key:
-            _save_cloud_api_key(self.cloud_api_key)
         raw = asdict(self)
-        # 从磁盘文件中剥离敏感字段
-        for key in self._SENSITIVE:
-            raw.pop(key, None)
+        if self.cloud_api_key:
+            stored_in_keyring = _save_cloud_api_key(self.cloud_api_key)
+            if stored_in_keyring:
+                # 密钥已存入 keyring，从磁盘文件中剥离敏感字段
+                raw.pop("cloud_api_key", None)
+            else:
+                # keyring 不可用，回退到 config.json 明文存储以保证 save/load 往返
+                logger.warning("keyring 不可用，cloud_api_key 将回退到 config.json 明文存储")
+        else:
+            raw.pop("cloud_api_key", None)
         with open(path / "config.json", "w") as f:
             json.dump(raw, f, indent=2)
 

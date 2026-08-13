@@ -45,7 +45,7 @@ def build_graph(papers: list[dict[str, Any]], min_edge_weight: int = 1) -> dict[
             "keywords": keywords[:5],
         })
 
-    edges = []
+    edges: list[dict[str, Any]] = []
     for i in range(len(papers)):
         for j in range(i + 1, len(papers)):
             shared_kw = set(node_keywords[i]) & set(node_keywords[j])

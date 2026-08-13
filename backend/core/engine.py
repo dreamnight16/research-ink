@@ -23,7 +23,7 @@ class PluginEngine:
         self._user_plugins_dir = path
 
     def discover_plugins(self, plugins_dir: str) -> list[dict[str, Any]]:
-        manifests = []
+        manifests: list[dict[str, Any]] = []
         base = Path(plugins_dir)
         if not base.exists():
             return manifests
@@ -40,6 +40,7 @@ class PluginEngine:
                 continue
             p = raw.get("plugin", {})
             deps = p.get("dependencies", [])
+            is_builtin = str(base) in str(Path(__file__).parent.parent / "plugins")
             manifests.append({
                 "name": p.get("name", candidate.name),
                 "display_name": p.get("display_name", candidate.name),
@@ -48,7 +49,7 @@ class PluginEngine:
                 "author": p.get("author", ""),
                 "dependencies": deps if isinstance(deps, list) else [],
                 "path": str(candidate),
-                "source": "builtin" if str(base) in str(Path(__file__).parent.parent / "plugins") else "user",
+                "source": "builtin" if is_builtin else "user",
             })
         return manifests
 
@@ -101,7 +102,8 @@ class PluginEngine:
                     "Refusing to load user plugin '%s' from %s — third-party plugins "
                     "run in-process and can read files (including .api_token), access the "
                     "network, and execute arbitrary code. Set 'allow_untrusted_plugins: true' "
-                    "in config.json to enable. Only enable if you have reviewed the plugin source code.",
+                    "in config.json to enable. Only enable if you have reviewed "
+                    "the plugin source code.",
                     plugin_name, plugin_path,
                 )
                 return False

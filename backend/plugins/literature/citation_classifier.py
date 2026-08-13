@@ -1,11 +1,11 @@
 """Smart citation classifier — classifies citations as supporting, contrasting,
 background, or methodology based on citation context heuristics."""
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class CitationIntent(str, Enum):
+class CitationIntent(StrEnum):
     SUPPORTING = "supporting"
     CONTRASTING = "contrasting"
     BACKGROUND = "background"
@@ -48,7 +48,6 @@ METHODOLOGY_PATTERNS = [
 def classify_citation(context: str, title: str = "") -> dict[str, Any]:
     """Classify a single citation based on its surrounding context text."""
     ctx_lower = context.lower()
-    title_lower = title.lower()
 
     scores = {
         CitationIntent.SUPPORTING: _count_matches(ctx_lower, SUPPORTING_PATTERNS),
@@ -64,7 +63,7 @@ def classify_citation(context: str, title: str = "") -> dict[str, Any]:
     if any(p in ctx_lower for p in extend_patterns):
         scores[CitationIntent.EXTENDING] = _count_matches(ctx_lower, extend_patterns) + 1
 
-    best = max(scores, key=scores.get)
+    best = max(scores, key=lambda k: scores[k])
     if scores[best] == 0:
         best = CitationIntent.UNKNOWN
 

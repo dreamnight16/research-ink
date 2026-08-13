@@ -63,7 +63,9 @@ def deduplicate(papers: list[dict[str, Any]], threshold: float = 0.85) -> list[d
     return result
 
 
-def find_near_duplicates(papers: list[dict[str, Any]], threshold: float = 0.75) -> list[dict[str, Any]]:
+def find_near_duplicates(
+    papers: list[dict[str, Any]], threshold: float = 0.75
+) -> list[dict[str, Any]]:
     """Find pairs of papers that are suspiciously similar but not exact dupes."""
     pairs: list[dict[str, Any]] = []
     for i in range(len(papers)):

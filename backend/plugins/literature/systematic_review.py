@@ -6,7 +6,10 @@ WORKFLOW_STEPS = [
     {
         "step": 1,
         "title": "定义研究问题",
-        "description": "用 PICO 框架明确你的研究问题：Population（研究对象）、Intervention（干预/方法）、Comparison（对比基线）、Outcome（目标结果）",
+        "description": (
+            "用 PICO 框架明确你的研究问题：Population（研究对象）、Intervention（干预/方法）、"
+            "Comparison（对比基线）、Outcome（目标结果）"
+        ),
         "template": {
             "population": "研究对象是什么？（如：NLP 中的 Transformer 模型）",
             "intervention": "关注的方法/干预？（如：稀疏注意力机制）",

@@ -62,7 +62,7 @@ def latex_to_sympy(latex_str: str) -> str:
         from sympy import sstr
         from sympy.parsing.latex import parse_latex
         expr = parse_latex(latex_str)
-        return sstr(expr)
+        return str(sstr(expr))
     except Exception:
         import logging
         logging.getLogger(__name__).debug(

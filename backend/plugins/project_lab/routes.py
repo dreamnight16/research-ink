@@ -1,8 +1,7 @@
 """Project Lab API routes — project & experiment CRUD with auto-versioning."""
 import json
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -20,10 +19,10 @@ class ProjectCreate(BaseModel):
 
 
 class ProjectUpdate(BaseModel):
-    title: Optional[str] = None
-    discipline: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[list[str]] = None
+    title: str | None = None
+    discipline: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
 
 
 class StatusUpdate(BaseModel):
@@ -40,12 +39,12 @@ class ExperimentCreate(BaseModel):
 
 
 class ExperimentUpdate(BaseModel):
-    title: Optional[str] = None
-    method: Optional[str] = None
-    params: Optional[dict] = None
-    result: Optional[str] = None
-    conclusion: Optional[str] = None
-    attachments: Optional[list[str]] = None
+    title: str | None = None
+    method: str | None = None
+    params: dict | None = None
+    result: str | None = None
+    conclusion: str | None = None
+    attachments: list[str] | None = None
 
 
 class CheckpointCreate(BaseModel):
@@ -57,7 +56,7 @@ class CheckpointCreate(BaseModel):
 # ── Helpers ───────────────────────────────────────────────
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _uid() -> str:
@@ -163,10 +162,10 @@ async def create_project(body: ProjectCreate, request: Request):
 @router.get("/projects")
 async def list_projects(
     request: Request,
-    status: Optional[str] = Query(
+    status: str | None = Query(
         None, pattern=r"^(active|paused|completed|archived)$",
     ),
-    tag: Optional[str] = None,
+    tag: str | None = None,
 ):
     """List all projects, optionally filtered by status or tag."""
     storage = request.app.state.storage
@@ -567,7 +566,6 @@ async def rollback_version(version_id: str, request: Request):
     entity_id = r["entity_id"]
     snapshot = json.loads(r["snapshot"])
 
-    table = entity_type + "s"
     ts = _now()
 
     if entity_type == "project":

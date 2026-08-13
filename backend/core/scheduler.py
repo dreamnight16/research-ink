@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable, Coroutine
+from contextlib import suppress
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -88,10 +89,8 @@ class TaskScheduler:
             t.cancel()
         if self._loop_task:
             self._loop_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._loop_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Scheduler stopped")
 
     async def _loop(self) -> None:

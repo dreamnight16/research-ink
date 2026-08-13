@@ -5,7 +5,7 @@ import logging
 import os
 import secrets
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,10 +81,8 @@ def _load_or_generate_token(config: Config) -> str:
     with open(token_path, "w") as f:
         f.write(token)
     # 限制文件权限（Unix）
-    try:
+    with suppress(OSError, NotImplementedError):
         os.chmod(token_path, 0o600)
-    except (OSError, NotImplementedError):
-        pass
     return token
 
 
@@ -122,7 +120,7 @@ def create_app(config: Config) -> FastAPI:
         for manifest in manifests:
             await engine.load_plugin_from_path(manifest["path"], manifest["name"])
         # Register plugin routes
-        for name, plugin in engine.list_plugins().items():
+        for plugin in engine.list_plugins().values():
             router = plugin.get_routes()
             if router:
                 app.include_router(router)
@@ -143,7 +141,9 @@ def create_app(config: Config) -> FastAPI:
                 manager.register(SemanticScholarCrawler())
                 manager.register(DBLPCrawler())
                 try:
-                    rows = storage.sql_query("SELECT value FROM kv WHERE key = 'literature_interests'")
+                    rows = storage.sql_query(
+                        "SELECT value FROM kv WHERE key = 'literature_interests'"
+                    )
                     keywords = json.loads(rows[0]["value"]) if rows else ["machine learning"]
                 except (json.JSONDecodeError, IndexError):
                     keywords = ["machine learning"]
@@ -183,11 +183,11 @@ def create_app(config: Config) -> FastAPI:
     app.state.auth_token = auth_token
     logger.info("API auth token initialized")
 
-    AUTH_SKIP_PATHS = auth_skip_paths()
+    skip_paths = auth_skip_paths()
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
-        if request.url.path in AUTH_SKIP_PATHS:
+        if request.url.path in skip_paths:
             return await call_next(request)
         token = request.headers.get("Authorization", "").lower().removeprefix("bearer ").strip()
         if not secrets.compare_digest(token, app.state.auth_token):
@@ -269,10 +269,8 @@ def create_app(config: Config) -> FastAPI:
         token_path = os.path.join(request.app.state.config.data_dir, ".api_token")
         with open(token_path, "w") as f:
             f.write(new_token)
-        try:
+        with suppress(OSError, NotImplementedError):
             os.chmod(token_path, 0o600)
-        except (OSError, NotImplementedError):
-            pass
         request.app.state.auth_token = new_token
         logger.info("API auth token rotated")
         return {"token": new_token}
@@ -301,7 +299,8 @@ def create_app(config: Config) -> FastAPI:
             raise HTTPException(status_code=403, detail="Invalid pair code")
         request.app.state.pair_code = None  # 一次性使用
         request.app.state.pair_code_expires = 0.0
-        return {"token": request.app.state.auth_token, "host": request.client.host}
+        host = request.client.host if request.client else ""
+        return {"token": request.app.state.auth_token, "host": host}
 
     @app.get("/api/plugins")
     async def list_plugins():
@@ -362,7 +361,10 @@ def create_app(config: Config) -> FastAPI:
                 setattr(cfg, key, val)
         cfg.save()
         _rebuild_llm_router(cfg, request.app)
-        logger.info("Settings updated (cloud_api_key %s)", "changed" if req.cloud_api_key else "unchanged")
+        logger.info(
+            "Settings updated (cloud_api_key %s)",
+            "changed" if req.cloud_api_key else "unchanged",
+        )
         return {"status": "ok"}
 
     @app.post("/api/knowledge/search")

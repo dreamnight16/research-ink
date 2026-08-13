@@ -31,22 +31,25 @@ class SemanticScholarCrawler(BaseCrawler):
     async def search(self, query: str, max_results: int = 10) -> CrawlerResult:
         limit = min(max_results, self.max_results_per_query)
         url = self.build_url(query, limit)
+        assert url is not None
 
         try:
             timeout = aiohttp.ClientTimeout(total=self.timeout)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(url) as resp:
-                    if resp.status == 429:
-                        return CrawlerResult(
-                            errors=["Semantic Scholar rate limited, wait 5 minutes"],
-                            source=self.name,
-                        )
-                    if resp.status != 200:
-                        return CrawlerResult(
-                            errors=[f"Semantic Scholar returned {resp.status}"],
-                            source=self.name,
-                        )
-                    data = await resp.json()
+            async with (
+                aiohttp.ClientSession(timeout=timeout) as session,
+                session.get(url) as resp,
+            ):
+                if resp.status == 429:
+                    return CrawlerResult(
+                        errors=["Semantic Scholar rate limited, wait 5 minutes"],
+                        source=self.name,
+                    )
+                if resp.status != 200:
+                    return CrawlerResult(
+                        errors=[f"Semantic Scholar returned {resp.status}"],
+                        source=self.name,
+                    )
+                data = await resp.json()
         except Exception as e:
             return CrawlerResult(errors=[str(e)], source=self.name)
 

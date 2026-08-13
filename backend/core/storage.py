@@ -1,7 +1,7 @@
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import chromadb
 
@@ -23,7 +23,7 @@ class Storage:
             self._local.conn.execute("PRAGMA journal_mode=WAL")
             self._local.conn.execute("PRAGMA busy_timeout=5000")
             self._local.conn.execute("PRAGMA foreign_keys=ON")
-        return self._local.conn
+        return cast(sqlite3.Connection, self._local.conn)
 
     def sql_execute(self, sql: str, params: tuple = ()) -> None:
         conn = self._get_conn()
@@ -43,4 +43,4 @@ class Storage:
             self._local.conn.close()
             self._local.conn = None
         self._chroma_client.clear_system_cache()
-        self._chroma_client.close()
+        self._chroma_client.close()  # type: ignore[attr-defined]

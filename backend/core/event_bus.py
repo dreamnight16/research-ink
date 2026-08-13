@@ -26,8 +26,10 @@ class EventBus:
         handlers = list(self._handlers.get(event, []))
         if not handlers:
             return
-        results = await asyncio.gather(*[handler(data) for handler in handlers], return_exceptions=True)
-        for i, result in enumerate(results):
+        results = await asyncio.gather(
+            *[handler(data) for handler in handlers], return_exceptions=True
+        )
+        for result in results:
             if isinstance(result, Exception):
                 logger.error(
                     "EventBus handler for '%s' raised: %s", event, result,

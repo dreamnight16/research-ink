@@ -1,9 +1,9 @@
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class TaskPhase(str, Enum):
+class TaskPhase(StrEnum):
     RESEARCH = "调研阶段"
     DESIGN = "设计阶段"
     IMPLEMENT = "实现阶段"
@@ -188,12 +188,22 @@ def parse_advisor_text(text: str) -> list[AdvisorTask]:
 
         # Also extract lowercase multi-word technical phrases
         lower_terms = re.findall(r"[a-z]{3,}(?:\s+[a-z]{3,})+", sentence_lower)
-        lower_terms = [" ".join(t.split()) for t in lower_terms if " ".join(t.split()) not in stopwords and len(" ".join(t.split()).split()) >= 2]
+        lower_terms = [
+            " ".join(t.split())
+            for t in lower_terms
+            if " ".join(t.split()) not in stopwords
+            and len(" ".join(t.split()).split()) >= 2
+        ]
         found_keywords.extend(lower_terms[:3])
 
         # Extract Chinese technical terms
-        chinese_terms = re.findall(r"[一-鿿]{2,8}(?:模型|方法|算法|网络|系统|框架|机制|理论|定理|公式|数据|实验|训练|推理|生成|识别|分类|预测|优化)?", sentence)
-        chinese_terms = [t for t in chinese_terms if t not in {"的方法", "在此基础", "首先需要", "然后进行", "最后", "在此基础上"}]
+        chinese_terms = re.findall(
+            r"[一-鿿]{2,8}(?:模型|方法|算法|网络|系统|框架|机制|理论|定理|公式|"
+            r"数据|实验|训练|推理|生成|识别|分类|预测|优化)?",
+            sentence,
+        )
+        stop_terms = {"的方法", "在此基础", "首先需要", "然后进行", "最后", "在此基础上"}
+        chinese_terms = [t for t in chinese_terms if t not in stop_terms]
         found_keywords.extend(chinese_terms[:3])
 
         # Deduplicate while preserving order
@@ -265,6 +275,10 @@ def create_plan(tasks: list[AdvisorTask], title: str = "") -> ResearchPlan:
             if PHASE_ORDER[p] < PHASE_ORDER[phase] and p in prev_phase_idx:
                 deps.append(prev_phase_idx[p])
 
+        milestone = (
+            f"{phase.value}: {task.action} — "
+            f"{', '.join(task.keywords[:2]) if task.keywords else '开始'}"
+        )
         planned_task = PlannedTask(
             index=i + 1,
             action=task.action,
@@ -275,14 +289,17 @@ def create_plan(tasks: list[AdvisorTask], title: str = "") -> ResearchPlan:
             depends_on=deps,
             subtasks=subtasks,
             resources=resources,
-            milestone=f"{phase.value}: {task.action} — {', '.join(task.keywords[:2]) if task.keywords else '开始'}",
+            milestone=milestone,
         )
         planned.append(planned_task)
         prev_phase_idx[phase] = i + 1
 
     # Sequential dependency for same-phase tasks
     for i in range(1, len(planned)):
-        if planned[i].phase == planned[i - 1].phase and planned[i - 1].index not in planned[i].depends_on:
+        if (
+            planned[i].phase == planned[i - 1].phase
+            and planned[i - 1].index not in planned[i].depends_on
+        ):
             planned[i].depends_on.append(planned[i - 1].index)
 
     # Calculate total (critical path estimate)

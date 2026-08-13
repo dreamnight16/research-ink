@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 import httpx
 
 
-class Provider(str, Enum):
+class Provider(StrEnum):
     OLLAMA = "ollama"
     CLAUDE = "claude"
     DEEPSEEK = "deepseek"
@@ -109,7 +109,7 @@ class LLMRouter:
             timeout=120.0,
         )
         resp.raise_for_status()
-        return resp.json()["message"]["content"]
+        return str(resp.json()["message"]["content"])
 
     async def _claude_chat(self, messages: list[dict[str, str]]) -> str:
         system = ""
@@ -138,7 +138,7 @@ class LLMRouter:
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["content"][0]["text"]
+        return str(data["content"][0]["text"])
 
     async def _openai_chat(self, messages: list[dict[str, str]]) -> str:
         client = self._get_client()
@@ -152,7 +152,7 @@ class LLMRouter:
             timeout=120.0,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        return str(resp.json()["choices"][0]["message"]["content"])
 
     async def _deepseek_chat(self, messages: list[dict[str, str]]) -> str:
         client = self._get_client()
@@ -166,4 +166,4 @@ class LLMRouter:
             timeout=120.0,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        return str(resp.json()["choices"][0]["message"]["content"])

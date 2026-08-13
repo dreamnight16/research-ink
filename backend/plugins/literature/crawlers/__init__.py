@@ -62,14 +62,14 @@ class CrawlerManager:
             asyncio.create_task(c.search(query, max_results))
             for c in targets
         ]
-        results: list[CrawlerResult] = await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_papers: list[dict[str, Any]] = []
         all_errors: list[str] = []
         total = 0
 
         for i, r in enumerate(results):
-            if isinstance(r, Exception):
+            if isinstance(r, BaseException):
                 all_errors.append(f"{targets[i].name}: {r}")
                 continue
             all_papers.extend(r.papers)

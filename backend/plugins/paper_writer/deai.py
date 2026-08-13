@@ -24,7 +24,10 @@ _AI_PATTERNS = [
     (re.compile(r"\bIt should be noted that\s*", re.IGNORECASE), ""),
     (re.compile(r"\bNot only\s+(\w+)\s+but also\s+", re.IGNORECASE), r"\1 "),
     # Dummy subjects
-    (re.compile(r"\bIt is (important|crucial|essential|vital|critical) to\b", re.IGNORECASE), "You should"),
+    (
+        re.compile(r"\bIt is (important|crucial|essential|vital|critical) to\b", re.IGNORECASE),
+        "You should",
+    ),
     (re.compile(r"\bIt can be (seen|observed|noted) that\b", re.IGNORECASE), ""),
     # Over-qualification
     (re.compile(r"\bpotentially\s+potentially\b", re.IGNORECASE), "potentially"),
@@ -36,7 +39,10 @@ _AI_PATTERNS = [
     (re.compile(r"\bobservers note that\b", re.IGNORECASE), ""),
     (re.compile(r"\bsome critics argue that\b", re.IGNORECASE), ""),
     # Overused emphasis
-    (re.compile(r"\bplays? a (crucial|critical|vital|pivotal|key) role in\b", re.IGNORECASE), "is important in"),
+    (
+        re.compile(r"\bplays? a (crucial|critical|vital|pivotal|key) role in\b", re.IGNORECASE),
+        "is important in",
+    ),
     (re.compile(r"\bserves as a testament to\b", re.IGNORECASE), "demonstrates"),
     (re.compile(r"\bin the ever-evolving landscape of\b", re.IGNORECASE), "in"),
     # Triple patterns → break into two
@@ -130,7 +136,7 @@ def detect_ai_score(text: str) -> dict:
     lengths = [len(s.strip()) for s in _SENTENCE_SPLIT.split(text) if s.strip()]
     if len(lengths) >= 3:
         avg = sum(lengths) / len(lengths)
-        uniform = sum(1 for l in lengths if abs(l - avg) < 10) / len(lengths)
+        uniform = sum(1 for length in lengths if abs(length - avg) < 10) / len(lengths)
         if uniform > 0.7:
             flags.append("句子长度过于均匀")
             score += 5

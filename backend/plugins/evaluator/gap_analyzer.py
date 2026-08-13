@@ -30,15 +30,17 @@ def analyze_gaps(papers: list[dict[str, Any]], field: str = "") -> list[dict[str
     # Heuristic-based gap detection
     checks = [
         ("theory", "理论分析", "theorem", "proof", "convergence", "bound", "guarantee"),
-        ("efficiency", "效率优化", "efficient", "lightweight", "pruning", "quantization", "distillation", "加速", "轻量"),
+        ("efficiency", "效率优化", "efficient", "lightweight", "pruning", "quantization",
+         "distillation", "加速", "轻量"),
         ("robustness", "鲁棒性", "robust", "adversarial", "noise", "perturbation", "鲁棒"),
         ("fairness", "公平性", "fairness", "bias", "demographic", "公平"),
         ("multimodal", "多模态", "multimodal", "cross-modal", "vision-language", "audio", "video"),
-        ("interpretability", "可解释性", "interpretable", "explainable", "saliency", "attention map", "可解释"),
+        ("interpretability", "可解释性", "interpretable", "explainable", "saliency",
+         "attention map", "可解释"),
         ("reproducibility", "可复现性", "code", "open-source", "reproducible", "开源", "复现"),
     ]
 
-    for check_id, name, *keywords in checks:
+    for _check_id, name, *keywords in checks:
         found = any(kw.lower() in all_text for kw in keywords)
         if not found:
             gaps.append({
@@ -64,9 +66,11 @@ def analyze_gaps(papers: list[dict[str, Any]], field: str = "") -> list[dict[str
 
 
 def _guess_field(text: str) -> str:
-    if any(kw in text for kw in ["transformer", "attention", "language model", "llm", "nlp", "bert", "gpt"]):
+    nlp_kws = ["transformer", "attention", "language model", "llm", "nlp", "bert", "gpt"]
+    if any(kw in text for kw in nlp_kws):
         return "nlp"
-    if any(kw in text for kw in ["image", "cnn", "convolution", "segmentation", "detection", "vision"]):
+    cv_kws = ["image", "cnn", "convolution", "segmentation", "detection", "vision"]
+    if any(kw in text for kw in cv_kws):
         return "cv"
     if any(kw in text for kw in ["graph", "gnn", "node", "edge"]):
         return "graph"
@@ -78,24 +82,64 @@ def _guess_field(text: str) -> str:
 def _field_specific_gaps(field: str) -> list[dict[str, Any]]:
     field_gaps = {
         "nlp": [
-            {"direction": "低资源语言", "confidence": "high", "reason": "NLP 研究集中在英语和少数高资源语言，低资源语言场景下的方法严重不足"},
-            {"direction": "长文本推理", "confidence": "high", "reason": "现有模型在长文档推理、多跳问答上仍有明显退化"},
+            {
+                "direction": "低资源语言",
+                "confidence": "high",
+                "reason": "NLP 研究集中在英语和少数高资源语言，低资源语言场景下的方法严重不足",
+            },
+            {
+                "direction": "长文本推理",
+                "confidence": "high",
+                "reason": "现有模型在长文档推理、多跳问答上仍有明显退化",
+            },
         ],
         "cv": [
-            {"direction": "3D 视觉", "confidence": "high", "reason": "2D 方法趋于饱和，3D 重建/理解/生成的精度和效率仍有巨大空间"},
-            {"direction": "视频理解", "confidence": "high", "reason": "从图像到视频的迁移在时序建模和计算效率上挑战显著"},
+            {
+                "direction": "3D 视觉",
+                "confidence": "high",
+                "reason": "2D 方法趋于饱和，3D 重建/理解/生成的精度和效率仍有巨大空间",
+            },
+            {
+                "direction": "视频理解",
+                "confidence": "high",
+                "reason": "从图像到视频的迁移在时序建模和计算效率上挑战显著",
+            },
         ],
         "graph": [
-            {"direction": "动态图", "confidence": "high", "reason": "大多数 GNN 方法假设静态图，现实场景中图结构往往随时间演化"},
-            {"direction": "异构图扩展性", "confidence": "medium", "reason": "异构图神经网络在大规模场景下的训练效率有待提升"},
+            {
+                "direction": "动态图",
+                "confidence": "high",
+                "reason": "大多数 GNN 方法假设静态图，现实场景中图结构往往随时间演化",
+            },
+            {
+                "direction": "异构图扩展性",
+                "confidence": "medium",
+                "reason": "异构图神经网络在大规模场景下的训练效率有待提升",
+            },
         ],
         "rl": [
-            {"direction": "离线 RL", "confidence": "high", "reason": "在线 RL 在真实场景中成本过高，离线 RL 的策略评估和外推仍是开放问题"},
-            {"direction": "多智能体协调", "confidence": "high", "reason": "多智能体场景下的信用分配、通信效率和涌现行为研究不足"},
+            {
+                "direction": "离线 RL",
+                "confidence": "high",
+                "reason": "在线 RL 在真实场景中成本过高，离线 RL 的策略评估和外推仍是开放问题",
+            },
+            {
+                "direction": "多智能体协调",
+                "confidence": "high",
+                "reason": "多智能体场景下的信用分配、通信效率和涌现行为研究不足",
+            },
         ],
         "general": [
-            {"direction": "跨领域泛化", "confidence": "high", "reason": "多数方法针对特定领域设计，跨领域时性能急剧下降"},
-            {"direction": "数据效率", "confidence": "high", "reason": "现有方法依赖大规模标注数据，少样本/零样本场景仍是挑战"},
+            {
+                "direction": "跨领域泛化",
+                "confidence": "high",
+                "reason": "多数方法针对特定领域设计，跨领域时性能急剧下降",
+            },
+            {
+                "direction": "数据效率",
+                "confidence": "high",
+                "reason": "现有方法依赖大规模标注数据，少样本/零样本场景仍是挑战",
+            },
         ],
     }
     return field_gaps.get(field, field_gaps["general"])

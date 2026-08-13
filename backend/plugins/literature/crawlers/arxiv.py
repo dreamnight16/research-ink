@@ -7,6 +7,7 @@ from backend.plugins.literature.fetcher import ArxivFetcher
 class ArxivCrawler(BaseCrawler):
     name = "arxiv"
     display_name = "ArXiv"
+    _fetcher: ArxivFetcher
 
     def __init__(self):
         self._fetcher = ArxivFetcher()
