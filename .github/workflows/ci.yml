@@ -11,27 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-      - name: Install ruff
-        run: pip install ruff
+      - name: Install dependencies
+        run: uv sync --locked --extra dev
       - name: Run ruff
-        run: ruff check backend/
+        run: uv run ruff check backend/
 
   typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: |
-          pip install mypy
-          pip install -e ".[dev]"
+        run: uv sync --locked --extra dev
       - name: Run mypy
-        run: mypy backend/
+        run: uv run mypy backend/
 
   test:
     runs-on: ubuntu-latest
@@ -40,16 +38,13 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+        run: uv sync --locked --extra dev
       - name: Run tests
-        run: python -m pytest tests/ -v --cov=backend --cov-report=term-missing
+        run: uv run python -m pytest tests/ -v --cov=backend --cov-report=term-missing
 
   frontend:
     runs-on: ubuntu-latest
