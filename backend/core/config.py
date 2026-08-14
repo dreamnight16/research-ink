@@ -26,7 +26,7 @@ def _load_cloud_api_key() -> str:
         import keyring
         key = keyring.get_password(_KEYRING_SERVICE, "cloud_api_key")
         if key:
-            return key
+            return str(key)
     except ImportError:
         logger.debug("keyring 未安装 — 如需安全存储 API 密钥，请: pip install keyring")
     except Exception as e:
