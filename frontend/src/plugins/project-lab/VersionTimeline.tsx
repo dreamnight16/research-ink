@@ -19,51 +19,20 @@ interface Props {
   onBack?: () => void;
 }
 
-/* ----- inline SVG icons ----- */
-
 const PinIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M10 2.5L13.5 6 9 9.5 11.5 13H4.5L7 9.5 2.5 6 6 2.5A5.3 5.3 0 0 0 8 3.5 5.3 5.3 0 0 0 10 2.5Z" />
   </svg>
 );
 
-const CommitIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-  >
-    <circle cx="8" cy="8" r="2" />
-    <line x1="1" y1="8" x2="6" y2="8" />
-    <line x1="10" y1="8" x2="15" y2="8" />
-  </svg>
-);
-
-/* ----- helpers ----- */
-
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
   if (diffMin < 1) return "刚刚";
   if (diffMin < 60) return `${diffMin} 分钟前`;
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr} 小时前`;
-  return d.toLocaleDateString("zh-CN", {
+  return d.toLocaleString("zh-CN", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -71,24 +40,29 @@ function formatTime(iso: string): string {
   });
 }
 
-export function VersionTimeline({
-  entityType,
-  entityId,
-  experimentId,
-  onBack,
-}: Props) {
+export function VersionTimeline({ entityType, entityId, experimentId, onBack }: Props) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkpointLabel, setCheckpointLabel] = useState("");
   const [showCheckpointInput, setShowCheckpointInput] = useState(false);
   const [rollbackId, setRollbackId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const targetType = experimentId ? "experiment" : entityType;
   const targetId = experimentId ?? entityId;
 
+  const fetchVersions = async () => {
+    const res = await api.get<{ success: boolean; data: Version[] }>(
+      `/api/project-lab/versions?entity_type=${encodeURIComponent(
+        targetType,
+      )}&entity_id=${encodeURIComponent(targetId)}`,
+    );
+    setVersions(res.data);
+  };
+
   useEffect(() => {
     let cancelled = false;
-    const fetchVersions = async () => {
+    const run = async () => {
       setLoading(true);
       try {
         const res = await api.get<{ success: boolean; data: Version[] }>(
@@ -97,11 +71,13 @@ export function VersionTimeline({
           )}&entity_id=${encodeURIComponent(targetId)}`,
         );
         if (!cancelled) setVersions(res.data);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "版本记录读取失败");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
-    fetchVersions();
+    run();
     return () => {
       cancelled = true;
     };
@@ -109,6 +85,7 @@ export function VersionTimeline({
 
   const handleCheckpoint = async () => {
     if (!checkpointLabel.trim()) return;
+    setError(null);
     try {
       await api.post("/api/project-lab/versions", {
         entity_type: targetType,
@@ -117,394 +94,154 @@ export function VersionTimeline({
       });
       setCheckpointLabel("");
       setShowCheckpointInput(false);
-      // Refresh versions
-      const res = await api.get<{ success: boolean; data: Version[] }>(
-        `/api/project-lab/versions?entity_type=${encodeURIComponent(
-          targetType,
-        )}&entity_id=${encodeURIComponent(targetId)}`,
-      );
-      setVersions(res.data);
+      await fetchVersions();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Checkpoint failed";
-      // eslint-disable-next-line no-console
-      console.error("Failed to create checkpoint:", msg);
+      setError(e instanceof Error ? e.message : "创建快照失败");
     }
   };
 
   const handleRollback = async (versionId: string) => {
     setRollbackId(versionId);
+    setError(null);
     try {
       await api.post(`/api/project-lab/versions/${versionId}/rollback`);
       setRollbackId(null);
-      // Refresh versions
-      const res = await api.get<{ success: boolean; data: Version[] }>(
-        `/api/project-lab/versions?entity_type=${encodeURIComponent(
-          targetType,
-        )}&entity_id=${encodeURIComponent(targetId)}`,
-      );
-      setVersions(res.data);
+      await fetchVersions();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Rollback failed";
-      // eslint-disable-next-line no-console
-      console.error("Rollback failed:", msg);
+      setError(e instanceof Error ? e.message : "回滚失败");
       setRollbackId(null);
     }
   };
 
   const handleRefresh = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.get<{ success: boolean; data: Version[] }>(
-        `/api/project-lab/versions?entity_type=${encodeURIComponent(
-          targetType,
-        )}&entity_id=${encodeURIComponent(targetId)}`,
-      );
-      setVersions(res.data);
+      await fetchVersions();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "刷新失败");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          color: "var(--text-muted)",
-          padding: "48px 0",
-          fontSize: 14,
-        }}
-      >
-        {"加载中..."}
-      </div>
-    );
-  }
-
-  const accentButtonStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    padding: "6px 12px",
-    fontSize: 13,
-    fontWeight: 500,
-    background: "var(--accent)",
-    color: "#fff",
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    cursor: "pointer",
-  };
-
-  const secondaryButtonStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    padding: "6px 12px",
-    fontSize: 13,
-    color: "var(--text-primary)",
-    background: "transparent",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius-sm)",
-    cursor: "pointer",
-  };
-
   return (
-    <div>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-          flexWrap: "wrap",
-          gap: 8,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div className="ink-stack">
+      <div className="ink-row" style={{ justifyContent: "space-between" }}>
+        <div className="ink-row">
           {onBack && (
-            <button
-              onClick={onBack}
-              style={{
-                fontSize: 13,
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                background: "none",
-                border: "none",
-                padding: 0,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--text-primary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--text-muted)";
-              }}
-            >
-              {"← 返回"}
+            <button type="button" className="ink-btn ink-btn--sm ink-btn--quiet" onClick={onBack}>
+              ← 返回
             </button>
           )}
-          <h2
-            style={{
-              fontSize: 17,
-              fontWeight: 600,
-              color: "var(--text-primary)",
-            }}
-          >
-            {"版本历史"}
-          </h2>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-            ({versions.length})
-          </span>
+          <div>
+            <p className="ink-kicker">Versions</p>
+            <h2 className="ink-h2">版本历史 · {versions.length}</h2>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="ink-row">
           <button
+            type="button"
+            className="ink-btn"
+            aria-expanded={showCheckpointInput}
             onClick={() => setShowCheckpointInput(!showCheckpointInput)}
-            style={secondaryButtonStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--bg-card-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
           >
             <PinIcon />
-            {"打快照"}
+            打快照
           </button>
-          <button
-            onClick={handleRefresh}
-            style={secondaryButtonStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--bg-card-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            {"刷新"}
+          <button type="button" className="ink-btn" onClick={handleRefresh} disabled={loading}>
+            {loading ? "刷新中…" : "刷新"}
           </button>
         </div>
       </div>
 
-      {/* Checkpoint input */}
+      {error && (
+        <div className="ink-notice" data-tone="danger">
+          <p className="ink-notice__title">版本操作未完成</p>
+          <p>{error}</p>
+        </div>
+      )}
+
       {showCheckpointInput && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input
-            type="text"
-            placeholder={"快照名称（如：投稿前、中期检查）"}
-            value={checkpointLabel}
-            onChange={(e) => setCheckpointLabel(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCheckpoint()}
-            style={{
-              flex: 1,
-              padding: "6px 10px",
-              fontSize: 13,
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--bg-input)",
-              color: "var(--text-primary)",
-              outline: "none",
-            }}
-            autoFocus
-          />
+        <div className="ink-row">
+          <label className="ink-field" style={{ flex: "1 1 240px" }}>
+            <span className="ink-label">快照名称</span>
+            <input
+              className="ink-input"
+              type="text"
+              placeholder="如：投稿前、中期检查"
+              value={checkpointLabel}
+              onChange={(e) => setCheckpointLabel(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCheckpoint()}
+              autoFocus
+            />
+          </label>
           <button
+            type="button"
+            className="ink-btn ink-btn--primary"
             onClick={handleCheckpoint}
             disabled={!checkpointLabel.trim()}
-            style={{
-              ...accentButtonStyle,
-              opacity: !checkpointLabel.trim() ? 0.5 : 1,
-              cursor: !checkpointLabel.trim()
-                ? "not-allowed"
-                : "pointer",
-            }}
+            style={{ alignSelf: "flex-end" }}
           >
-            {"保存"}
+            保存快照
           </button>
         </div>
       )}
 
-      {/* Empty state */}
-      {versions.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            color: "var(--text-muted)",
-            padding: "64px 0",
-            fontSize: 14,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <div style={{
-            fontSize: 36,
-            lineHeight: 1,
-            opacity: 0.25,
-            fontFamily: "var(--font-serif)",
-          }}>
-            {"📜"}
-          </div>
-          <div>
-            {"编辑内容后自动产生版本记录，或手动打快照标记重要节点"}
-          </div>
+      {loading ? (
+        <p className="ink-note">正在读取版本记录…</p>
+      ) : versions.length === 0 ? (
+        <div className="ink-empty">
+          <p className="ink-empty__mark" aria-hidden="true">—</p>
+          <p className="ink-h3">还没有版本记录</p>
+          <p className="ink-note">编辑内容后会自动产生版本记录；也可以手动打快照标记重要节点。</p>
         </div>
       ) : (
-        <div style={{ position: "relative" }}>
-          {/* Vertical timeline line */}
-          <div
-            style={{
-              position: "absolute",
-              left: 15,
-              top: 8,
-              bottom: 8,
-              width: 2,
-              background: "var(--border)",
-            }}
-          />
-
-          <div>
-            {versions.map((v, i) => (
-              <div
-                key={v.id}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  gap: 16,
-                  paddingBottom: 16,
-                  paddingLeft: 36,
-                  paddingTop: i === 0 ? 12 : 0,
-                  paddingRight: i === 0 ? 16 : 0,
-                  marginLeft: i === 0 ? 4 : 0,
-                  marginRight: i === 0 ? 4 : 0,
-                  background: i === 0 ? "var(--accent-soft)" : "transparent",
-                  borderRadius: i === 0 ? "var(--radius)" : 0,
-                }}
-              >
-                {/* Timeline dot */}
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 11,
-                    top: 8,
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    border: "2px solid var(--bg-card)",
-                    background: v.is_checkpoint
-                      ? "#f97316"
-                      : "var(--text-muted)",
-                    zIndex: 1,
-                  }}
-                />
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      marginBottom: 2,
-                    }}
-                  >
-                    {v.is_checkpoint ? (
-                      <span
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          color: "#f97316",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <PinIcon />
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          color: "var(--text-muted)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <CommitIcon />
-                      </span>
-                    )}
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "var(--text-primary)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {v.is_checkpoint ? v.label : v.change_summary}
-                    </span>
-                    {i === 0 && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          padding: "1px 6px",
-                          borderRadius: 8,
-                          background: "var(--green-bg)",
-                          color: "var(--green)",
-                          fontWeight: 600,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {"当前"}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {formatTime(v.created_at)}
-                  </span>
-                  {i > 0 && (
-                    <button
-                      onClick={() => {
-                        if (window.confirm("确定要回滚到此版本吗？当前未保存的更改将丢失。")) {
-                          handleRollback(v.id);
-                        }
-                      }}
-                      disabled={rollbackId === v.id}
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 12,
-                        color: "var(--accent)",
-                        cursor:
-                          rollbackId === v.id
-                            ? "not-allowed"
-                            : "pointer",
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        opacity: rollbackId === v.id ? 0.5 : 1,
-                        textDecoration: "underline",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (rollbackId !== v.id)
-                          e.currentTarget.style.color = "#92400e";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (rollbackId !== v.id)
-                          e.currentTarget.style.color =
-                            "var(--accent)";
-                      }}
-                    >
-                      {rollbackId === v.id
-                        ? "回滚中..."
-                        : "回滚到此"}
-                    </button>
-                  )}
-                </div>
+        <div className="ink-timeline">
+          <span className="ink-timeline__line" aria-hidden="true" />
+          {versions.map((v, i) => (
+            <div
+              key={v.id}
+              className={[
+                "ink-timeline__item",
+                v.is_checkpoint ? "ink-timeline__item--checkpoint" : "",
+                i === 0 ? "ink-timeline__item--current" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span className="ink-timeline__marker" aria-hidden="true" />
+              <div className="ink-list__main">
+                <p className="ink-h3">{v.is_checkpoint ? v.label : v.change_summary || "内容变更"}</p>
+                <p className="ink-list__meta">
+                  <span>{v.is_checkpoint ? "手动快照" : "自动记录"}</span>
+                  <span>{formatTime(v.created_at)}</span>
+                </p>
               </div>
-            ))}
-          </div>
+              <div className="ink-row">
+                {i === 0 && (
+                  <span className="ink-flag" data-tone="ok">
+                    <span aria-hidden="true">●</span>
+                    <span>当前版本</span>
+                  </span>
+                )}
+                {i > 0 && (
+                  <button
+                    type="button"
+                    className="ink-btn ink-btn--sm"
+                    disabled={rollbackId === v.id}
+                    onClick={() => {
+                      if (window.confirm("确定要回滚到此版本吗？当前未保存的更改将丢失。")) {
+                        handleRollback(v.id);
+                      }
+                    }}
+                  >
+                    {rollbackId === v.id ? "回滚中…" : "回滚到此"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

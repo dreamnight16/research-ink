@@ -7,51 +7,40 @@ interface Props {
   readonly?: boolean;
 }
 
-const styles: Record<Classification, { bg: string; text: string; border: string }> = {
-  secret: { bg: 'var(--red-bg)', text: 'var(--red)', border: '#fecaca' },
-  cautious: { bg: 'var(--amber-bg)', text: 'var(--amber)', border: '#fde68a' },
-  public: { bg: 'var(--green-bg)', text: 'var(--green)', border: '#bbf7d0' },
-};
-
-const labels: Record<Classification, string> = {
-  secret: '机密',
-  cautious: '审慎',
-  public: '公开',
+/**
+ * 数据级别标记。级别用「级 3 / 级 2 / 级 1」文字 + 色条左侧标记同时表达，
+ * 不依赖颜色单独传达状态。
+ */
+const LEVELS: Record<Classification, { tier: string; label: string; tone: string }> = {
+  secret: { tier: '级 3', label: '机密', tone: 'error' },
+  cautious: { tier: '级 2', label: '审慎', tone: 'warn' },
+  public: { tier: '级 1', label: '公开', tone: 'ok' },
 };
 
 export const SecurityBadge: React.FC<Props> = ({ classification, onChange, readonly }) => {
-  const s = styles[classification];
+  const level = LEVELS[classification];
 
   if (readonly) {
     return (
-      <span className="badge" style={{
-        background: s.bg,
-        color: s.text,
-        border: `1px solid ${s.border}`,
-      }}>
-        {labels[classification]}
+      <span className="ink-flag" data-tone={level.tone}>
+        <span className="ink-sr">数据级别</span>
+        <span aria-hidden="true">{level.tier}</span>
+        <span>{level.label}</span>
       </span>
     );
   }
 
   return (
     <select
+      className="ink-select ink-select--flag"
+      data-tone={level.tone}
+      aria-label="数据级别"
       value={classification}
       onChange={(e) => onChange?.(e.target.value as Classification)}
-      style={{
-        padding: '5px 10px',
-        borderRadius: 'var(--radius-sm)',
-        border: `1px solid ${s.border}`,
-        background: s.bg,
-        color: s.text,
-        fontWeight: 600,
-        fontSize: 12,
-        cursor: 'pointer',
-      }}
     >
-      <option value="secret">机密</option>
-      <option value="cautious">审慎</option>
-      <option value="public">公开</option>
+      <option value="secret">级 3 · 机密</option>
+      <option value="cautious">级 2 · 审慎</option>
+      <option value="public">级 1 · 公开</option>
     </select>
   );
 };

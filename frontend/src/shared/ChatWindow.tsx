@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage, Classification } from '../core/types';
+import { SecurityBadge } from './SecurityBadge';
 
 const STORAGE_KEY = 'yanmo-chat-messages';
 
@@ -23,11 +24,13 @@ export const ChatWindow: React.FC = () => {
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState<Classification>('cautious');
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
 
+  // 只滚动消息框自身：scrollIntoView 会在窄屏上把整页一起滚动到对话栏
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, loading]);
 
   const updateMessages = (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
     setMessages((prev) => {
@@ -67,145 +70,66 @@ export const ChatWindow: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <div style={{
-        padding: '14px 16px',
-        borderBottom: '1px solid var(--border-light)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>—</span>
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
-            问一问
-          </span>
+    <>
+      <div className="ink-chat__head">
+        <div>
+          <p className="ink-kicker">Local Chat</p>
+          <h2 className="ink-h3">问一问</h2>
         </div>
-        <select
-          value={classification}
-          onChange={(e) => setClassification(e.target.value as Classification)}
-          style={{
-            fontSize: 11,
-            padding: '4px 8px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-input)',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="cautious">审慎</option>
-          <option value="public">公开</option>
-        </select>
+        <SecurityBadge classification={classification} onChange={setClassification} />
       </div>
 
-      {/* Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '12px 14px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}>
+      <div className="ink-chat__log" role="log" aria-live="polite" aria-label="对话记录" ref={logRef}>
         {messages.length === 0 && (
-          <div style={{
-            textAlign: 'center',
-            padding: '32px 16px',
-            color: 'var(--text-muted)',
-            fontSize: 13,
-            lineHeight: 1.7,
-          }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>—</div>
-            <div>有什么想聊的？</div>
-            <div style={{ fontSize: 11, marginTop: 4 }}>研究思路、文献问题、公式疑问...</div>
+          <div className="ink-note">
+            <p>有什么想聊的？研究思路、文献问题、公式疑问都可以。</p>
+            <p className="ink-note--sm">
+              请求发往本机 127.0.0.1:8000 的后端，不会直接发往第三方服务。
+            </p>
           </div>
         )}
         {messages.map((m, i) => {
           const isUser = m.role === 'user';
           return (
-            <div key={i} style={{
-              display: 'flex',
-              justifyContent: isUser ? 'flex-end' : 'flex-start',
-            }}>
-              <div style={{
-                maxWidth: '85%',
-                padding: '10px 14px',
-                borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: isUser ? 'var(--accent-light)' : 'var(--bg-card)',
-                border: isUser ? 'none' : '1px solid var(--border-light)',
-                color: 'var(--text-primary)',
-                fontSize: 13,
-                lineHeight: 1.55,
-                boxShadow: isUser ? 'none' : 'var(--shadow-sm)',
-              }}>
-                {m.content}
-              </div>
+            <div key={i} className="ink-chat__msg" data-role={isUser ? 'user' : 'assistant'}>
+              <span className="ink-chat__who">{isUser ? '我' : '研墨'}</span>
+              {m.content}
             </div>
           );
         })}
         {loading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{
-              padding: '10px 14px',
-              borderRadius: '16px 16px 16px 4px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)',
-              fontSize: 13,
-              color: 'var(--text-muted)',
-            }}>
-              思考中...
-            </div>
+          <div className="ink-chat__msg" data-role="assistant">
+            <span className="ink-chat__who">研墨</span>
+            正在生成回答…
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div style={{
-        padding: '12px 14px',
-        borderTop: '1px solid var(--border-light)',
-        display: 'flex',
-        gap: 8,
-      }}>
-        <input
+      <div className="ink-chat__composer">
+        <label className="ink-sr" htmlFor="chat-input">输入消息</label>
+        <textarea
+          id="chat-input"
+          className="ink-textarea"
           value={input}
+          rows={2}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder="说点什么..."
-          style={{
-            flex: 1,
-            padding: '10px 14px',
-            border: '1px solid var(--border)',
-            borderRadius: '20px',
-            fontSize: 13,
-            background: 'var(--bg-input)',
-            color: 'var(--text-primary)',
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
           }}
+          placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"
         />
         <button
+          type="button"
+          className="ink-btn ink-btn--primary"
           onClick={send}
           disabled={loading || !input.trim()}
-          style={{
-            width: 38,
-            height: 38,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: loading ? 'var(--border)' : 'var(--accent)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '50%',
-            cursor: loading ? 'default' : 'pointer',
-            fontSize: 14,
-            transition: 'all var(--transition)',
-            opacity: loading || !input.trim() ? 0.5 : 1,
-          }}
         >
-          ↑
+          {loading ? '发送中' : '发送'}
         </button>
       </div>
-    </div>
+    </>
   );
 };

@@ -75,153 +75,77 @@ export const ProjectLabPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          color: "var(--red)",
-          fontSize: 14,
-        }}
-      >
-        {error}
+      <div className="ink-notice" data-tone="danger">
+        <p className="ink-notice__title">项目实验室无法加载</p>
+        <p>
+          无法从本机后端 127.0.0.1:8000 读取项目列表。这不是「没有项目」，
+          而是这次请求失败了，下面的「重新加载」可以重试。
+        </p>
+        <p className="ink-note ink-note--sm">后端返回：{error}</p>
+        <div className="ink-row">
+          <button type="button" className="ink-btn ink-btn--sm" onClick={fetchProjects}>
+            重新加载
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {/* Breadcrumb / View Switcher */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 16px",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          {selectedProject && (
-            <button
-              onClick={handleBackToProjects}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: 13,
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                padding: 0,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--text-primary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--text-muted)";
-              }}
-            >
-              {"←"} 项目列表
-            </button>
-          )}
-          {selectedProject && (
+    <div className="ink-stack" style={{ gap: 24 }}>
+      {/* 上下文条：始终说明当前在哪一层，返回路径可见 */}
+      <div className="ink-section__head">
+        <nav className="ink-row" aria-label="当前位置">
+          {selectedProject ? (
             <>
-              <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                /
-              </span>
-              <span
-                style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}
-              >
-                {selectedProject.title}
+              <button type="button" className="ink-btn ink-btn--sm ink-btn--quiet" onClick={handleBackToProjects}>
+                ← 项目列表
+              </button>
+              <span className="ink-note ink-note--sm" aria-hidden="true">/</span>
+              <span className="ink-h3">{selectedProject.title}</span>
+            </>
+          ) : (
+            <>
+              <span className="ink-kicker">Scope</span>
+              <span className="ink-h3">全部项目</span>
+              <span className="ink-num ink-note" style={{ fontSize: "1rem" }}>
+                {loading ? "…" : projects.length}
               </span>
             </>
           )}
-          <div style={{ flex: 1 }} />
-          {selectedProject && (
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                onClick={() => setViewMode("experiments")}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: viewMode === "experiments" ? 600 : 400,
-                  background:
-                    viewMode === "experiments"
-                      ? "var(--accent)"
-                      : "transparent",
-                  color:
-                    viewMode === "experiments"
-                      ? "#fff"
-                      : "var(--text-muted)",
-                }}
-              >
-                实验记录
-              </button>
-              <button
-                onClick={() => setViewMode("versions")}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: viewMode === "versions" ? 600 : 400,
-                  background:
-                    viewMode === "versions" ? "var(--accent)" : "transparent",
-                  color:
-                    viewMode === "versions" ? "#fff" : "var(--text-muted)",
-                }}
-              >
-                版本历史
-              </button>
-            </div>
-          )}
-        </div>
+        </nav>
 
-        {/* Content */}
-        <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-          {viewMode === "projects" && loading ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                color: "var(--text-muted)",
-                fontSize: 14,
-              }}
+        {selectedProject && (
+          <div className="ink-seg" role="group" aria-label="项目视图">
+            <button
+              type="button"
+              className="ink-seg__opt"
+              aria-pressed={viewMode === "experiments"}
+              onClick={() => setViewMode("experiments")}
             >
-              加载中...
-            </div>
-          ) : viewMode === "projects" ? (
-            <ProjectList
-              projects={projects}
-              onSelect={handleSelectProject}
-              onRefresh={fetchProjects}
-            />
-          ) : viewMode === "experiments" && selectedProject ? (
-            <ExperimentEditor
-              project={selectedProject}
-              onUpdate={setSelectedProject}
-            />
-          ) : viewMode === "versions" && selectedProject ? (
-            <VersionTimeline
-              entityType="project"
-              entityId={selectedProject.id}
-            />
-          ) : null}
-        </div>
+              实验记录
+            </button>
+            <button
+              type="button"
+              className="ink-seg__opt"
+              aria-pressed={viewMode === "versions"}
+              onClick={() => setViewMode("versions")}
+            >
+              版本历史
+            </button>
+          </div>
+        )}
       </div>
+
+      {viewMode === "projects" && loading ? (
+        <p className="ink-note">正在从本机后端读取项目…</p>
+      ) : viewMode === "projects" ? (
+        <ProjectList projects={projects} onSelect={handleSelectProject} onRefresh={fetchProjects} />
+      ) : viewMode === "experiments" && selectedProject ? (
+        <ExperimentEditor project={selectedProject} onUpdate={setSelectedProject} />
+      ) : viewMode === "versions" && selectedProject ? (
+        <VersionTimeline entityType="project" entityId={selectedProject.id} />
+      ) : null}
     </div>
   );
 };

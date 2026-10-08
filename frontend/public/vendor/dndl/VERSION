@@ -1,0 +1,19 @@
+DNDL (DreamNight Design Language)
+Implementation 1.1.0 · 品牌基准 DNDL v1.0
+
+Source: https://github.com/dreamnight16/dreamnight-design @ 3d0658e
+License: MIT (see LICENSE)
+Files: tokens.css, materials.css, motion.css
+
+Consumption rule (from the design repo README):
+将所需文件以确定版本纳入产品，保留其同级关系；
+不引用可变的默认分支作为生产设计依赖。
+原始品牌色与核心语言不得修改；本目录文件请勿就地改动数值。
+
+Consumed by: research-ink / frontend (研墨 Web 前端)
+Load order (frontend/index.html): tokens.css → materials.css → motion.css
+SHA256 (as vendored):
+  tokens.css    F3E219DEB42256540B88C0D8C47B3C50CC7AC1DA24C96893048451A9F1E4AAE7
+  materials.css 0821EE0722050133F1919758256893FA5472035131D99BD8A5D358A157FB76E7
+  motion.css    45D5847CFB12F6F060113327A81DC38E32982298F32000F80EA7DAFA5EE8D4CE
+  LICENSE       5E7C43972A6A9AC2B4868ABF0167FFB42052966829A4F421ABEA9BB195BA5475

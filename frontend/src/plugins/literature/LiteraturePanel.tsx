@@ -14,6 +14,19 @@ interface Paper {
   doi?: string;
 }
 
+interface Gap {
+  direction: string;
+  confidence: string;
+  reason: string;
+}
+
+interface Graph {
+  nodes: { id: string; name: string; symbolSize: number }[];
+  edges: { source: string; target: string; weight: number; shared_keywords: string[] }[];
+  total_nodes: number;
+  total_edges: number;
+}
+
 const paperKey = (p: Paper): string => p.id || p.arxiv_id || p.title;
 const paperLink = (p: Paper): string => p.link || (p.doi ? `https://doi.org/${p.doi}` : '#');
 const venueName = (p: Paper): string => {
@@ -22,17 +35,23 @@ const venueName = (p: Paper): string => {
   return p.venue.name || '';
 };
 
-
+/** 相对时间按本机当前时间计算，来源是论文自身的发表日期 */
 const timeAgo = (dateStr: string): string => {
   if (!dateStr) return '';
   const pub = new Date(dateStr);
-  const now = new Date();
-  const days = Math.floor((now.getTime() - pub.getTime()) / (1000 * 60 * 60 * 24));
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  if (Number.isNaN(pub.getTime())) return '';
+  const days = Math.floor((Date.now() - pub.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 7) return `${days} 天前`;
+  if (days < 30) return `${Math.floor(days / 7)} 周前`;
   return pub.toLocaleDateString('zh-CN');
+};
+
+const confidenceLabel: Record<string, string> = {
+  high: '高置信度',
+  medium: '中等置信度',
+  low: '低置信度',
 };
 
 export const LiteraturePanel: React.FC = () => {
@@ -43,6 +62,11 @@ export const LiteraturePanel: React.FC = () => {
   const [summaries, setSummaries] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [gaps, setGaps] = useState<Gap[]>([]);
+  const [showGaps, setShowGaps] = useState(false);
+  const [graph, setGraph] = useState<Graph | null>(null);
+  /** 动作失败时明确说明原因，界面不静默失败 */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadFeed = useCallback(async () => {
     setLoading(true);
@@ -51,17 +75,27 @@ export const LiteraturePanel: React.FC = () => {
       const data = await res.json();
       setPapers(data.papers ?? []);
       if (data.interests?.length) setInterests(data.interests);
-    } catch (e) {
+      setActionError(null);
+    } catch (e: unknown) {
+      // 后端不可达时给出明确说明，而不是显示成「没有论文」
       setPapers([]);
+      setActionError(
+        '无法连接本机后端 127.0.0.1:8000，下面的列表为空是连接失败，不是没有论文。' +
+          (e instanceof Error ? '（' + e.message + '）' : ''),
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
   const loadInterests = async () => {
-    const res = await fetch('http://127.0.0.1:8000/api/literature/interests');
-    const data = await res.json();
-    if (data.keywords?.length) setInterests(data.keywords);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/literature/interests');
+      const data = await res.json();
+      if (data.keywords?.length) setInterests(data.keywords);
+    } catch {
+      // 关键词读取失败不影响后续操作，界面下方已有连接状态提示
+    }
   };
 
   useEffect(() => {
@@ -69,48 +103,57 @@ export const LiteraturePanel: React.FC = () => {
     loadFeed();
   }, [loadFeed]);
 
-  const [gaps, setGaps] = useState<{ direction: string; confidence: string; reason: string }[]>([]);
-  const [showGaps, setShowGaps] = useState(false);
-
   const findGaps = async () => {
     if (papers.length === 0) return;
-    const res = await fetch('http://127.0.0.1:8000/api/evaluator/gap-analysis', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ papers: papers.slice(0, 10) }),
-    });
-    const data = await res.json();
-    setGaps(data.gaps || []);
-    setShowGaps(true);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/evaluator/gap-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ papers: papers.slice(0, 10) }),
+      });
+      const data = await res.json();
+      setGaps(data.gaps || []);
+      setShowGaps(true);
+      setActionError(null);
+    } catch (e: unknown) {
+      setActionError('研究空白分析失败：' + (e instanceof Error ? e.message : '未知错误'));
+    }
   };
-
-  const [graph, setGraph] = useState<{ nodes: { id: string; name: string; symbolSize: number }[]; edges: { source: string; target: string; weight: number; shared_keywords: string[] }[]; total_nodes: number; total_edges: number } | null>(null);
 
   const buildGraph = async () => {
     if (papers.length < 2) return;
-    const res = await fetch('http://127.0.0.1:8000/api/literature/citation-graph', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ papers: papers.slice(0, 20) }),
-    });
-    const data = await res.json();
-    setGraph(data);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/literature/citation-graph', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ papers: papers.slice(0, 20) }),
+      });
+      const data = await res.json();
+      setGraph(data);
+      setActionError(null);
+    } catch (e: unknown) {
+      setActionError('引用关系分析失败：' + (e instanceof Error ? e.message : '未知错误'));
+    }
   };
 
   const saveInterests = async (updated: string[]) => {
     setInterests(updated);
-    await fetch('http://127.0.0.1:8000/api/literature/interests', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords: updated }),
-    });
+    try {
+      await fetch('http://127.0.0.1:8000/api/literature/interests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords: updated }),
+      });
+      setActionError(null);
+    } catch (e: unknown) {
+      setActionError('关键词没有写入后端：' + (e instanceof Error ? e.message : '未知错误'));
+    }
   };
 
   const addInterest = () => {
     const kw = newInterest.trim();
     if (!kw || interests.includes(kw)) return;
-    const updated = [...interests, kw];
-    saveInterests(updated);
+    saveInterests([...interests, kw]);
     setNewInterest('');
   };
 
@@ -121,234 +164,338 @@ export const LiteraturePanel: React.FC = () => {
   const doSearch = async () => {
     if (!searchQuery.trim()) return;
     setLoading(true);
-    const res = await fetch('http://127.0.0.1:8000/api/literature/fetch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: searchQuery, max_results: 10 }),
-    });
-    const data = await res.json();
-    setPapers(data.papers);
-    setLoading(false);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/literature/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery, max_results: 10 }),
+      });
+      const data = await res.json();
+      setPapers(data.papers);
+      setActionError(null);
+    } catch (e: unknown) {
+      setActionError('搜索失败：' + (e instanceof Error ? e.message : '未知错误'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const summarizePaper = async (paper: Paper) => {
     if (summaries[paperKey(paper)]) return;
-    const res = await fetch('http://127.0.0.1:8000/api/literature/summarize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(paper),
-    });
-    const data = await res.json();
-    setSummaries((prev) => ({ ...prev, [paperKey(paper)]: data.summary }));
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/literature/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paper),
+      });
+      const data = await res.json();
+      setSummaries((prev) => ({ ...prev, [paperKey(paper)]: data.summary }));
+      setActionError(null);
+    } catch (e: unknown) {
+      setActionError('摘要失败：' + (e instanceof Error ? e.message : '未知错误'));
+    }
   };
 
   return (
-    <div style={{ maxWidth: 780 }}>
-      {/* Interests bar */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: '#888', whiteSpace: 'nowrap' }}>Your fields:</span>
-          {interests.map((kw) => (
-            <span key={kw}
-              onClick={() => removeInterest(kw)}
-              title="Click to remove"
-              style={{ background: '#e8f0fe', color: 'var(--accent)', padding: '3px 10px', borderRadius: 14, fontSize: 12, cursor: 'pointer', userSelect: 'none' }}>
-              {kw} ×
-            </span>
-          ))}
-          <input
-            value={newInterest}
-            onChange={(e) => setNewInterest(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-            placeholder="+ add keyword"
-            style={{ width: 120, padding: '4px 8px', border: '1px dashed #ccc', borderRadius: 14, fontSize: 12, outline: 'none' }}
-          />
+    <div className="ink-stack" style={{ gap: 32 }}>
+      {/* ------------------------------------------------ 关注领域 --- */}
+      <section className="ink-section">
+        <div className="ink-section__head">
+          <div>
+            <p className="ink-kicker">Fields</p>
+            <h2 className="ink-h2 ink-section__title">关注领域</h2>
+          </div>
+          <p className="ink-note ink-note--sm">这些关键词决定订阅源抓取什么。点标签即可移除。</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={loadFeed} disabled={loading}
-            style={{ padding: '6px 16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
-            {loading ? 'Loading...' : 'Refresh Feed'}
+
+        <div className="ink-row">
+          {interests.length === 0 && (
+            <span className="ink-note">还没有关键词，先添加一个再刷新订阅。</span>
+          )}
+          {interests.map((kw) => (
+            <button
+              key={kw}
+              type="button"
+              className="ink-tag ink-tag--field"
+              onClick={() => removeInterest(kw)}
+              aria-label={`移除关键词 ${kw}`}
+            >
+              {kw}
+              <span className="ink-tag__x" aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="ink-row">
+          <label className="ink-field" style={{ flex: '1 1 220px', maxWidth: 320 }}>
+            <span className="ink-label">新增关键词</span>
+            <input
+              className="ink-input"
+              value={newInterest}
+              onChange={(e) => setNewInterest(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addInterest()}
+              placeholder="例如：sparse attention"
+            />
+          </label>
+          <button
+            type="button"
+            className="ink-btn"
+            onClick={addInterest}
+            disabled={!newInterest.trim()}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            添加
           </button>
-          <button onClick={() => setShowSearch(!showSearch)}
-            style={{ padding: '6px 16px', background: 'transparent', color: '#888', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
-            {showSearch ? 'Hide Search' : 'Search...'}
-          </button>
-          <button onClick={findGaps} disabled={papers.length === 0}
-            style={{ padding: '6px 16px', background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
-            找思路
-          </button>
-          <button onClick={buildGraph} disabled={papers.length < 2}
-            style={{ padding: '6px 16px', background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
-            引用图
-          </button>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------ 操作 --- */}
+      <section className="ink-section">
+        <div className="ink-section__head">
+          <div>
+            <p className="ink-kicker">Actions</p>
+            <h2 className="ink-h2 ink-section__title">抓取与分析</h2>
+          </div>
           {papers.length > 0 && (
-            <span style={{ fontSize: 12, color: '#aaa', alignSelf: 'center' }}>
-              {papers.length} papers
-            </span>
+            <p className="ink-num" style={{ fontSize: '1.5rem' }}>{papers.length} 篇</p>
           )}
         </div>
-      </div>
 
-      {/* Collapsible search */}
-      {showSearch && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && doSearch()}
-            placeholder="Search ArXiv..."
-            style={{ flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }} />
-          <button onClick={doSearch}
-            style={{ padding: '8px 16px', background: '#333', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
-            Search
+        <div className="ink-row">
+          <button
+            type="button"
+            className="ink-btn ink-btn--primary"
+            onClick={loadFeed}
+            disabled={loading}
+          >
+            {loading ? '抓取中…' : '刷新订阅'}
+          </button>
+          <button
+            type="button"
+            className="ink-btn"
+            aria-expanded={showSearch}
+            onClick={() => setShowSearch(!showSearch)}
+          >
+            {showSearch ? '收起搜索' : '按关键词搜索'}
+          </button>
+          <button
+            type="button"
+            className="ink-btn"
+            onClick={findGaps}
+            disabled={papers.length === 0}
+          >
+            找研究空白
+          </button>
+          <button
+            type="button"
+            className="ink-btn"
+            onClick={buildGraph}
+            disabled={papers.length < 2}
+          >
+            看引用关系
           </button>
         </div>
-      )}
 
-      {/* Empty state */}
-      {!loading && papers.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 48, color: '#aaa' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
-          <div style={{ fontSize: 15, marginBottom: 8 }}>No papers yet</div>
-          <div style={{ fontSize: 13 }}>
-            Add your research interests above and click "Refresh Feed"
+        {showSearch && (
+          <div className="ink-row">
+            <label className="ink-field" style={{ flex: '1 1 260px' }}>
+              <span className="ink-label">搜索 ArXiv</span>
+              <input
+                className="ink-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && doSearch()}
+                placeholder="输入关键词后回车"
+              />
+            </label>
+            <button
+              type="button"
+              className="ink-btn"
+              onClick={doSearch}
+              disabled={!searchQuery.trim()}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              搜索
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Citation graph */}
-      {graph && (
-        <div style={{ marginBottom: 20, border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg-card)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontWeight: 600, fontSize: 15 }}>Citation Graph ({graph.total_nodes} papers, {graph.total_edges} connections)</span>
-            <button onClick={() => setGraph(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>×</button>
+        {actionError && (
+          <div className="ink-notice" data-tone="danger">
+            <p className="ink-notice__title">这一步没有完成</p>
+            <p>{actionError}</p>
           </div>
-          <div style={{ maxHeight: 400, overflow: 'auto' }}>
-            {graph.edges.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>No shared keywords between papers. Try adding more papers.</div>
-            ) : (
-              <div>
-                {graph.edges.slice(0, 20).map((edge, i) => {
-                  const src = graph.nodes.find((n: { id: string }) => n.id === edge.source);
-                  const tgt = graph.nodes.find((n: { id: string }) => n.id === edge.target);
-                  return (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0',
-                      borderBottom: '1px solid var(--border-light)', fontSize: 12,
-                    }}>
-                      <span style={{ fontWeight: 500, flex: 1, textAlign: 'right', color: 'var(--accent)' }}>{src?.name || edge.source}</span>
-                      <span style={{
-                        flexShrink: 0, padding: '2px 8px', borderRadius: 10, fontSize: 10,
-                        background: `color-mix(in srgb, var(--accent) ${edge.weight * 20}%, transparent)`,
-                        color: 'var(--accent)', fontWeight: 600,
-                      }}>{edge.weight} shared</span>
-                      <span style={{ fontWeight: 500, flex: 1, color: 'var(--text-primary)' }}>{tgt?.name || edge.target}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Gap analysis results */}
+        <p className="ink-data-note">
+          列表内容来自本机后端返回的论文数据，界面不生成、不补全任何论文或时间。
+        </p>
+      </section>
+
+      {/* ------------------------------------------------ 研究空白 --- */}
       {showGaps && gaps.length > 0 && (
-        <div style={{ marginBottom: 20, border: '1px solid var(--accent-border)', borderRadius: 10, padding: 16, background: 'var(--accent-soft)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--accent)' }}>Research Gaps</span>
-            <button onClick={() => setShowGaps(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>×</button>
-          </div>
-          {gaps.map((g, i) => (
-            <div key={i} style={{ marginBottom: 8, fontSize: 13, lineHeight: 1.6 }}>
-              <span style={{ fontWeight: 600 }}>{g.direction}</span>
-              <span style={{
-                marginLeft: 8, fontSize: 10, padding: '1px 6px', borderRadius: 8,
-                background: g.confidence === 'high' ? 'var(--red-bg)' : 'var(--amber-bg)',
-                color: g.confidence === 'high' ? 'var(--red)' : 'var(--amber)',
-              }}>{g.confidence === 'high' ? 'high confidence' : 'medium'}</span>
-              <div style={{ color: 'var(--text-secondary)', marginTop: 2 }}>{g.reason}</div>
+        <section className="ink-section">
+          <div className="ink-section__head">
+            <div>
+              <p className="ink-kicker">Gaps</p>
+              <h2 className="ink-h2 ink-section__title">研究空白 · {gaps.length} 条</h2>
             </div>
-          ))}
-        </div>
+            <button type="button" className="ink-btn ink-btn--sm" onClick={() => setShowGaps(false)}>
+              关闭
+            </button>
+          </div>
+          <div className="ink-list">
+            {gaps.map((g, i) => (
+              <div className="ink-list__row" key={i}>
+                <div className="ink-list__main">
+                  <p className="ink-h3">{g.direction}</p>
+                  {g.reason && <p className="ink-note" style={{ marginTop: 4 }}>{g.reason}</p>}
+                </div>
+                <span
+                  className="ink-flag"
+                  data-tone={g.confidence === 'high' ? 'error' : g.confidence === 'low' ? 'neutral' : 'warn'}
+                >
+                  <span>{confidenceLabel[g.confidence] ?? g.confidence}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* News feed */}
-      <div>
-        {papers.map((paper) => {
-          const isNew = paper.published && new Date(paper.published).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-          return (
-            <div key={paperKey(paper)}
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                padding: 20,
-                marginBottom: 12,
-                background: 'var(--bg-card)',
-                position: 'relative',
-              }}>
-              {/* New badge */}
-              {isNew && (
-                <span style={{
-                  position: 'absolute', top: -1, right: -1,
-                  background: '#d93025', color: '#fff',
-                  padding: '2px 8px', borderRadius: '0 10px 0 8px',
-                  fontSize: 11, fontWeight: 600,
-                }}>
-                  NEW
-                </span>
-              )}
-
-              {/* Title */}
-              <h4 style={{ margin: '0 0 8px 0', fontSize: 16, lineHeight: 1.4, paddingRight: isNew ? 40 : 0 }}>
-                <a href={paperLink(paper)} target="_blank" rel="noopener noreferrer"
-                  style={{ color: 'var(--accent)', textDecoration: 'none' }}>
-                  {paper.title}
-                </a>
-                {paper.doi && (
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>DOI</span>
-                )}
-              </h4>
-
-              {/* Meta line */}
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span>{paper.authors.split(',').slice(0, 3).join(', ')}{paper.authors.split(',').length > 3 ? ' et al.' : ''}</span>
-                {paper.year && <span style={{ fontWeight: 500 }}>{paper.year}</span>}
-                {paper.citations !== undefined && paper.citations > 0 && (
-                  <span style={{ color: 'var(--green)', fontWeight: 500 }}>{paper.citations} cites</span>
-                )}
-                {venueName(paper) && (
-                  <span style={{ fontStyle: 'italic' }}>{venueName(paper)}</span>
-                )}
-                <span>{timeAgo(paper.published)}</span>
-              </div>
-
-              {/* Abstract preview */}
-              <div style={{ fontSize: 13, lineHeight: 1.65, color: '#555', marginBottom: 10 }}>
-                {paper.summary.slice(0, 280)}{paper.summary.length > 280 ? '...' : ''}
-              </div>
-
-              {/* Summarize button / result */}
-              {summaries[paperKey(paper)] ? (
-                <div style={{
-                  background: '#f0f7ff', borderLeft: '2px solid #1a73e8',
-                  borderRadius: 4, padding: '8px 12px', fontSize: 13, lineHeight: 1.55, color: '#333',
-                }}>
-                  {summaries[paperKey(paper)]}
-                </div>
-              ) : (
-                <button onClick={() => summarizePaper(paper)}
-                  style={{
-                    padding: '3px 10px', background: 'transparent', color: 'var(--accent)',
-                    border: '1px solid #1a73e840', borderRadius: 4, cursor: 'pointer', fontSize: 12,
-                  }}>
-                  AI Summarize
-                </button>
-              )}
+      {/* ------------------------------------------------ 引用关系 --- */}
+      {graph && (
+        <section className="ink-section">
+          <div className="ink-section__head">
+            <div>
+              <p className="ink-kicker">Graph</p>
+              <h2 className="ink-h2 ink-section__title">引用关系</h2>
             </div>
-          );
-        })}
-      </div>
+            <div className="ink-row">
+              <span className="ink-note ink-note--sm">
+                {graph.total_nodes} 个节点 · {graph.total_edges} 条连接
+              </span>
+              <button type="button" className="ink-btn ink-btn--sm" onClick={() => setGraph(null)}>
+                关闭
+              </button>
+            </div>
+          </div>
+
+          {graph.edges.length === 0 ? (
+            <div className="ink-empty">
+              <p className="ink-empty__mark" aria-hidden="true">—</p>
+              <p className="ink-h3">这些论文之间没有共享关键词</p>
+              <p className="ink-note">增加更多论文或调整关键词后再试。</p>
+            </div>
+          ) : (
+            <div className="ink-list">
+              {graph.edges.slice(0, 20).map((edge, i) => {
+                const src = graph.nodes.find((n) => n.id === edge.source);
+                const tgt = graph.nodes.find((n) => n.id === edge.target);
+                return (
+                  <div className="ink-timeline__item" key={i}>
+                    <span className="ink-list__main" style={{ textAlign: 'right' }}>
+                      {src?.name || edge.source}
+                    </span>
+                    <span className="ink-tag ink-tag--field">{edge.weight} 个共享关键词</span>
+                    <span className="ink-list__main">{tgt?.name || edge.target}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ------------------------------------------------ 论文列表 --- */}
+      <section className="ink-section">
+        <div className="ink-section__head">
+          <div>
+            <p className="ink-kicker">Feed</p>
+            <h2 className="ink-h2 ink-section__title">论文订阅</h2>
+          </div>
+        </div>
+
+        {!loading && papers.length === 0 ? (
+          <div className="ink-empty">
+            <p className="ink-empty__mark" aria-hidden="true">—</p>
+            <p className="ink-h3">{actionError ? '暂时没有可显示的论文' : '还没有论文'}</p>
+            <p className="ink-note">
+              {actionError
+                ? '上面的提示说明了失败原因；恢复后端连接后点「刷新订阅」重试。'
+                : '先在上面添加研究关键词，然后点「刷新订阅」；也可以直接用「按关键词搜索」。'}
+            </p>
+          </div>
+        ) : (
+          <div className="ink-split">
+            {papers.map((paper) => {
+              const isNew =
+                !!paper.published &&
+                new Date(paper.published).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
+              const summary = summaries[paperKey(paper)];
+              return (
+                <article className="ink-card" key={paperKey(paper)}>
+                  <div className="ink-row" style={{ justifyContent: 'space-between' }}>
+                    <p className="ink-card__title" style={{ flex: '1 1 220px' }}>
+                      <a href={paperLink(paper)} target="_blank" rel="noopener noreferrer">
+                        {paper.title}
+                      </a>
+                    </p>
+                    {isNew && (
+                      <span className="ink-flag" data-tone="info">
+                        <span aria-hidden="true">◆</span>
+                        <span>近 7 天</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="ink-list__meta">
+                    {paper.authors && (
+                      <span>
+                        {paper.authors.split(',').slice(0, 3).join(', ')}
+                        {paper.authors.split(',').length > 3 ? ' 等' : ''}
+                      </span>
+                    )}
+                    {paper.year && <span>{paper.year}</span>}
+                    {paper.citations !== undefined && paper.citations > 0 && (
+                      <span>被引 {paper.citations}</span>
+                    )}
+                    {venueName(paper) && <span>{venueName(paper)}</span>}
+                    {paper.published && <span>{timeAgo(paper.published)}</span>}
+                    {paper.doi && <span>DOI {paper.doi}</span>}
+                  </p>
+
+                  {paper.summary && (
+                    <p className="ink-note">
+                      {paper.summary.slice(0, 280)}
+                      {paper.summary.length > 280 ? '…' : ''}
+                    </p>
+                  )}
+
+                  {summary ? (
+                    <div className="ink-panel" style={{ borderLeft: '4px solid var(--dn-cyan)' }}>
+                      <p className="ink-kicker">本地摘要</p>
+                      <p className="ink-note" style={{ marginTop: 6, color: 'var(--dn-text-primary)' }}>
+                        {summary}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <button
+                        type="button"
+                        className="ink-btn ink-btn--sm"
+                        onClick={() => summarizePaper(paper)}
+                      >
+                        用本地模型摘要
+                      </button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

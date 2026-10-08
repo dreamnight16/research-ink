@@ -1,102 +1,268 @@
-/* ===== 移动端响应式样式 ===== */
+/* 研墨移动端 · DNDL v1.0（实现 1.1.0）消费层
+ *
+ * 规则：
+ * - 只引用 tokens.css 的 --dn-* 变量，不重复声明任何品牌数值。
+ * - 直角（--dn-radius 为 0）；不引入无理由圆角。
+ * - 色块正文用 --dn-text-on-color；Canvas/Surface 上的次要小字用 --dn-text-secondary。
+ *   原始 --dn-ink-muted 不用于浅色背景的普通小字。
+ * - 不使用元素级 opacity 淡化文字 —— 已验证的对比度是按满不透明度测得的。
+ */
 
-/* 小屏 (< 768px)：垂直布局，侧边栏变底部栏 */
-@media (max-width: 768px) {
-  .workbench {
-    flex-direction: column !important;
-  }
-
-  .workbench > main {
-    flex: 1;
-    overflow-y: auto;
-  }
-
-  .side-panel {
-    width: 100% !important;
-    height: 40vh;
-    border-left: none !important;
-    border-top: 1px solid var(--border-light);
-  }
-
-  .tab-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab-bar button {
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  /* 输入框和按钮适配触控 */
-  input, textarea, select, button {
-    font-size: 16px !important; /* 防 iOS 缩放 */
-    min-height: 44px; /* 符合 iOS 触控最小尺寸 */
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* 极小屏 (< 375px) */
-@media (max-width: 375px) {
-  h1 { font-size: 1.25rem; }
-  h2 { font-size: 1.1rem; }
-
-  .paper-card, .result-card {
-    padding: 10px;
-  }
-}
-
-/* 连接状态横幅 */
-.connect-banner {
-  padding: 8px 12px;
-  font-size: 13px;
-  text-align: center;
-  font-weight: 500;
-}
-
-.connect-banner.connected {
-  background: var(--green-bg);
-  color: var(--green);
-}
-
-.connect-banner.disconnected {
-  background: var(--red-bg);
-  color: var(--red);
-}
-
-.connect-banner.searching {
-  background: var(--amber-bg);
-  color: var(--amber);
-}
-
-/* 配对页面 */
-.pair-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+html,
+body,
+#root {
   height: 100%;
-  padding: 24px;
-  gap: 16px;
-  text-align: center;
 }
 
-.pair-screen input {
-  text-align: center;
-  font-size: 24px;
-  letter-spacing: 8px;
-  width: 160px;
+body {
+  margin: 0;
+  background: var(--dn-canvas);
+  color: var(--dn-text-primary);
+  font-family: var(--dn-font);
+  font-size: var(--dn-size-body);
+  line-height: var(--dn-leading-body);
+  -webkit-text-size-adjust: 100%;
 }
 
-/* 离线遮罩 */
-.offline-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+/* ---------------------------------------------------------------- 布局 --- */
+
+.screen {
   display: flex;
   flex-direction: column;
+  min-height: 100%;
+  /* 刘海屏/手势条安全区 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* 品牌实色块：内容驱动的顶部识别区，不是装饰 */
+.brand-field {
+  background: var(--dn-teal);
+  color: var(--dn-text-on-color);
+  padding: clamp(2rem, 9vw, 3rem) clamp(1.25rem, 5vw, 2rem);
+}
+
+.brand-field h1 {
+  margin: 0;
+  font-family: var(--dn-font-display);
+  font-weight: var(--dn-weight-display);
+  font-size: clamp(2.25rem, 11vw, 3.25rem);
+  line-height: var(--dn-leading-display);
+  color: var(--dn-text-on-color);
+}
+
+.kicker {
+  margin: 0 0 0.75rem;
+  font-size: var(--dn-size-kicker);
+  font-weight: var(--dn-weight-kicker);
+  letter-spacing: var(--dn-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--dn-text-on-color);
+}
+
+.brand-field .brand-sub {
+  margin: 0.75rem 0 0;
+  max-width: 28ch;
+  color: var(--dn-text-on-color);
+}
+
+/* 表单区浮在 Canvas 上 */
+.panel {
+  flex: 1;
+  padding: clamp(1.5rem, 6vw, 2.25rem) clamp(1.25rem, 5vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--dn-text-secondary);
+}
+
+/* -------------------------------------------------------------- 状态条 --- */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--dn-control-border);
+  font-size: 0.8125rem;
+  color: var(--dn-text-primary);
+}
+
+/* 状态用「形状 + 文字」表达，不只靠颜色 */
+.status::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: currentColor;
+}
+
+.status--searching::before {
+  background: var(--dn-amber);
+}
+
+.status--ready::before {
+  background: var(--dn-emerald);
+}
+
+.status--offline::before {
+  background: var(--dn-crimson);
+}
+
+/* ---------------------------------------------------------------- 表单 --- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.field label {
+  font-size: var(--dn-size-kicker);
+  font-weight: var(--dn-weight-kicker);
+  letter-spacing: var(--dn-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--dn-text-secondary);
+}
+
+.field input {
+  min-height: var(--dn-target-min);
+  padding: 0 0.75rem;
+  border: 1px solid var(--dn-control-border);
+  border-radius: var(--dn-radius);
+  background: var(--dn-surface);
+  color: var(--dn-text-primary);
+  /* 16px 以下 iOS 会自动放大页面 */
+  font-size: 1rem;
+  font-family: var(--dn-font);
+}
+
+.field input::placeholder {
+  color: var(--dn-text-secondary);
+}
+
+/* 配对码：等宽大字、逐字符可读 */
+.field input.code {
+  font-size: 1.5rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  color: #fff;
-  z-index: 100;
+  min-height: var(--dn-target-min);
+  padding: 0 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--dn-radius);
+  background: var(--dn-teal);
+  color: var(--dn-text-on-color);
+  font-size: 1rem;
+  font-family: var(--dn-font);
+  font-weight: var(--dn-weight-kicker);
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background: var(--dn-surface);
+  color: var(--dn-text-secondary);
+  border-color: var(--dn-divider);
+  cursor: not-allowed;
+}
+
+.btn--quiet {
+  background: var(--dn-surface);
+  color: var(--dn-text-primary);
+  border-color: var(--dn-control-border);
+}
+
+/* ------------------------------------------------------------------ 错误 --- */
+
+.error {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--dn-crimson);
+  color: var(--dn-text-primary);
+  font-size: 0.875rem;
+}
+
+/* 前缀符号让"这是错误"不只靠颜色传达 */
+.error::before {
+  content: '!';
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  background: var(--dn-crimson);
+  color: var(--dn-text-on-color);
+  font-weight: var(--dn-weight-kicker);
+}
+
+/* ------------------------------------------------------------ 已连接态 --- */
+
+.connected-block {
+  background: var(--dn-emerald);
+  color: var(--dn-text-on-color);
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.connected-block .label {
+  margin: 0;
+  font-size: var(--dn-size-kicker);
+  font-weight: var(--dn-weight-kicker);
+  letter-spacing: var(--dn-tracking-kicker);
+  text-transform: uppercase;
+}
+
+.connected-block .addr {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  font-weight: var(--dn-weight-display);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.facts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--dn-divider);
+}
+
+.facts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--dn-divider);
+  font-size: 0.875rem;
+}
+
+.facts .k {
+  color: var(--dn-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
