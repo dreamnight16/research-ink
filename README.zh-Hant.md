@@ -2,7 +2,7 @@
 
 # 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/ResearchInk/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/research-ink/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,12 +36,12 @@ npm run dev
 
 ### 桌面應用程式
 
-從 [Releases](https://github.com/dreamnight16/ResearchInk/releases) 下載安裝包：
+從 [Releases](https://github.com/dreamnight16/research-ink/releases) 下載安裝包：
 
 | 平台 | 格式 | 大小 |
 |------|------|------|
-| Windows 10/11 | `.msi` | ~50MB |
-| macOS 12+ | `.dmg` | ~50MB |
+| Windows 10/11 | `.exe`（NSIS 安裝器） | ~50MB |
+| macOS 12+（Apple Silicon） | `.dmg` | ~50MB |
 | Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
 
 桌面應用程式使用 Tauri 殼打包 React 前端，自動啟動 Python 後端。需 Python 3.11+ 和 Ollama。

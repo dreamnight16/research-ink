@@ -2,7 +2,7 @@
 
 # 研墨 / ResearchInk
 
-[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/ResearchInk/actions)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-green)](https://github.com/dreamnight16/research-ink/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-lightgrey)]()
@@ -36,12 +36,12 @@ npm run dev
 
 ### デスクトップアプリケーション
 
-[Releases](https://github.com/dreamnight16/ResearchInk/releases) からインストーラーをダウンロード：
+[Releases](https://github.com/dreamnight16/research-ink/releases) からインストーラーをダウンロード：
 
 | プラットフォーム | 形式 | サイズ |
 |------|------|------|
-| Windows 10/11 | `.msi` | ~50MB |
-| macOS 12+ | `.dmg` | ~50MB |
+| Windows 10/11 | `.exe`（NSIS インストーラー） | ~50MB |
+| macOS 12+（Apple Silicon） | `.dmg` | ~50MB |
 | Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
 
 Tauri シェルで React フロントエンドをパッケージ化、Python バックエンドを自動起動。Python 3.11+ と Ollama が必要です。

@@ -46,10 +46,10 @@ Requires Python 3.11+, Node.js 18+, and Ollama.
 **One-shot install:**
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dreamnight16/research-ink/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-Invoke-WebRequest https://raw.githubusercontent.com/dreamnight16/ResearchInk/master/scripts/install.ps1 | Invoke-Expression
+Invoke-WebRequest https://raw.githubusercontent.com/dreamnight16/research-ink/master/scripts/install.ps1 | Invoke-Expression
 ```
 
 **Manual install:**
@@ -75,12 +75,12 @@ docker compose up
 
 ### Desktop App
 
-Download the installer for your platform from [Releases](https://github.com/dreamnight16/ResearchInk/releases):
+Download the installer for your platform from [Releases](https://github.com/dreamnight16/research-ink/releases):
 
 | Platform | Format | Size |
 |----------|--------|------|
 | Windows 10/11 | `.exe`（NSIS 安装器） | ~50MB |
-| macOS 12+ | `.dmg` | ~50MB |
+| macOS 12+ (Apple Silicon) | `.dmg` | ~50MB |
 | Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
 
 > **Note:** The desktop app bundles the React frontend with a Tauri shell. Python 3.11+ and Ollama are required as runtime dependencies (not bundled).
