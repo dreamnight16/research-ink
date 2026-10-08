@@ -79,7 +79,7 @@ Download the installer for your platform from [Releases](https://github.com/drea
 
 | Platform | Format | Size |
 |----------|--------|------|
-| Windows 10/11 | `.msi` | ~50MB |
+| Windows 10/11 | `.exe`（NSIS 安装器） | ~50MB |
 | macOS 12+ | `.dmg` | ~50MB |
 | Linux (x86_64) | `.AppImage` / `.deb` | ~50MB |
 

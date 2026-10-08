@@ -16,12 +16,15 @@ jobs:
           - os: ubuntu-latest
             target: linux
             ext: AppImage
+            args: ""
           - os: macos-latest
             target: macos
             ext: dmg
+            args: ""
           - os: windows-latest
             target: windows
-            ext: msi
+            ext: nsis
+            args: "--bundles nsis"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +53,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: frontend
+          args: ${{ matrix.args }}
           tagName: ${{ github.ref_name }}
           releaseName: "研墨 v__VERSION__"
           releaseBody: "See CHANGELOG.md for details."
