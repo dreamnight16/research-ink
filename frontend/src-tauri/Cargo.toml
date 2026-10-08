@@ -1,6 +1,6 @@
 [package]
 name = "research-ink"
-version = "1.0.0"
+version = "1.1.0"
 description = "研墨 · 本地优先的科研助手"
 authors = ["DreamNight"]
 edition = "2021"
