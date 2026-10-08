@@ -102,8 +102,8 @@ pub fn run() {
             *state.process.lock().unwrap() = backend;
 
             if let Some(home) = home_dir() {
-                let research-ink_dir = home.join(".research-ink");
-                *state.data_dir.lock().unwrap() = research-ink_dir.to_string_lossy().to_string();
+                let research_ink_dir = home.join(".research-ink");
+                *state.data_dir.lock().unwrap() = research_ink_dir.to_string_lossy().to_string();
             }
 
             let handle = app.handle().clone();
