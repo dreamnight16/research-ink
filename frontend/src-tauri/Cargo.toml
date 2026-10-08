@@ -6,7 +6,7 @@ authors = ["DreamNight"]
 edition = "2021"
 
 [lib]
-name = "research-ink_lib"
+name = "research_ink_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
